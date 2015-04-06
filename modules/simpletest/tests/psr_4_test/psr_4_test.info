@@ -1,9 +1,9 @@
-name = Minimal
-description = Start with only a few modules enabled.
-version = VERSION
+name = PSR-4 Test cases
+description = Test classes to be discovered by simpletest.
 core = 7.x
-dependencies[] = block
-dependencies[] = dblog
+
+hidden = TRUE
+package = Testing
 
 ; Information added by Drupal.org packaging script on 2015-04-02
 version = "7.36"

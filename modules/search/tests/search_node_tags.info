@@ -1,9 +1,9 @@
-name = Minimal
-description = Start with only a few modules enabled.
+name = "Test search node tags"
+description = "Support module for Node search tags testing."
+package = Testing
 version = VERSION
 core = 7.x
-dependencies[] = block
-dependencies[] = dblog
+hidden = TRUE
 
 ; Information added by Drupal.org packaging script on 2015-04-02
 version = "7.36"

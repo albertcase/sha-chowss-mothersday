@@ -1,10 +1,11 @@
-name = "Drupal system listing compatible test"
-description = "Support module for testing the drupal_system_listing function."
+name = "Drupal code registry test"
+description = "Support module for testing the code registry."
+files[] = drupal_autoload_test_interface.inc
+files[] = drupal_autoload_test_class.inc
 package = Testing
 version = VERSION
 core = 7.x
 hidden = TRUE
-files[] = drupal_system_listing_compatible_test.test
 
 ; Information added by Drupal.org packaging script on 2015-04-02
 version = "7.36"
