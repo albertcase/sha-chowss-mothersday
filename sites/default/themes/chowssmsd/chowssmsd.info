@@ -1,0 +1,16 @@
+name = CHOWSS MSD
+core = 7.x
+
+regions[header] = Header
+regions[highlighted] = Highlighted
+regions[content] = Content
+regions[sidebar_left] = Left Sidebar
+regions[sidebar_right] = Right Sidebar
+regions[footer] = Footer
+
+stylesheets[all][] = css/reset.css
+stylesheets[all][] = css/common.less
+stylesheets[all][] = css/header.less
+stylesheets[all][] = css/left_right_nav.less
+
+scripts[] = js/jquery-1.7.2.min.js
