@@ -1,0 +1,22 @@
+gnore configuration files that may contain sensitive information.
+#sites/*/settings*.php
+.DS_Store
+# Ignore paths that contain user-generated content.
+sites/all/files
+sites/default/files
+sites/*/private
+/.settings
+#Vagrantfile
+
+# Ignore project files
+.buildpath
+.project
+.vagrant
+tags
+vbox/
+sites/default/files
+.idea
+.sass-cache
+sites/default/modules/ddms_performance/ddms_uglifyjs/js
+php_errors.log
+
