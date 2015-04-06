@@ -1,0 +1,81 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function ssbd_staticpage_menu() {
+  $items = array();
+  $items['admin/config/ssbd/staticpage'] = array(
+    'title' => 'SSBD Static Page',
+    'description' => 'Configure required settings for Staticpage',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ssbd_staticpage_settings_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'ssbd_staticpage.pages.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_preprocess_html()
+ */
+function ssbd_staticpage_preprocess_html(&$variables) {
+  $node = menu_get_object();
+  if($node) {
+    if($node->type == 'static_page') {
+      $identifiers = _get_tpl_identifier($node->nid);
+      foreach($identifiers as $identifier)
+        $variables['theme_hook_suggestions'][] = 'html__staticpage__' . $identifier;
+    }
+  }
+}
+
+/**
+ * Implementation of hook_preprocess_page().
+ */
+function ssbd_staticpage_preprocess_page(&$variables) {
+  $node = menu_get_object();
+  if($node) {
+    if($node->type == 'static_page') {
+      $identifiers = _get_tpl_identifier($node->nid);
+      foreach($identifiers as $identifier)
+        $variables['theme_hook_suggestions'][] = 'page__staticpage__' . $identifier;
+    }
+  }
+}
+
+/**
+ * Implementation of hook_preprocess_node()
+ */
+function ssbd_staticpage_preprocess_node(&$variables) {
+  $node = $variables['node'];
+  if ($node->type == 'static_page') {
+     $identifiers = _get_tpl_identifier($node->nid);
+     foreach($identifiers as $identifier)
+        $variables['theme_hook_suggestions'][] = 'node__staticpage__' . $identifier;
+  }
+}
+
+/**
+ * Convert nid to alias path
+ * return array
+ */
+function _get_tpl_identifier($nid) {
+  
+  $detect = mobile_detect_get_object();
+  $url = drupal_get_path_alias('node/' . $nid);
+  $url = str_replace('-', '_', $url);
+  $identifier = str_replace('/', '__', $url);
+
+  $identifiers = array();
+  $identifiers[] = $identifier;
+
+  if ($detect->isMobile() || variable_get('ssbd_staticpage_simulate_mobile', NULL)) {
+    if(!$detect->isTablet())
+       $identifier = $identifier . '__mobile';
+  }
+  $identifiers[] = $identifier;
+
+  return $identifiers;
+}

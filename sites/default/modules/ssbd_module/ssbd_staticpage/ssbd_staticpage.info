@@ -1,0 +1,5 @@
+name = SSBD Static Pages
+description = Static Pages
+package = SSBD
+core = 7.x
+
