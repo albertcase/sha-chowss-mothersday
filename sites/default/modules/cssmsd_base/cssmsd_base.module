@@ -1,0 +1,87 @@
+<?php
+
+function _is_iphone_ios6_access() {
+  $http_user_agent = $_SERVER['HTTP_USER_AGENT'];
+  $detect = '/\(iPhone; CPU .* OS */';
+
+  if (preg_match($detect, $http_user_agent))
+    return TRUE;
+
+  return FALSE;
+}
+
+function _is_android_phone_access() {
+  $http_user_agent = $_SERVER['HTTP_USER_AGENT'];
+  $detect = '/ Android.* Mobile /';
+
+  if (preg_match($detect, $http_user_agent))
+    return TRUE;
+
+  return FALSE;
+}
+
+function _is_ipad_ios6_access() {
+  $http_user_agent = $_SERVER['HTTP_USER_AGENT'];
+  $detect = '/\(iPad; CPU OS 6_.*/';
+
+  if (preg_match($detect, $http_user_agent))
+    return TRUE;
+
+  return FALSE;
+}
+
+/**
+ * sanitize utf8mb4 characters
+ */
+function _utf8_4byte_to_3byte($input) {
+  if (!empty($input)) {
+    $utf8_2byte = 0xC0 /*1100 0000*/; $utf8_2byte_bmask = 0xE0 /*1110 0000*/;
+    $utf8_3byte = 0xE0 /*1110 0000*/; $utf8_3byte_bmask = 0XF0 /*1111 0000*/;
+    $utf8_4byte = 0xF0 /*1111 0000*/; $utf8_4byte_bmask = 0xF8 /*1111 1000*/;
+
+    $sanitized = "";
+    $len = strlen($input);
+    for ($i = 0; $i < $len; ++$i) {
+      $mb_char = $input[$i]; // Potentially a multibyte sequence
+      $byte = ord($mb_char);
+      if (($byte & $utf8_2byte_bmask) == $utf8_2byte) {
+        $mb_char .= $input[++$i];
+      }
+      else if (($byte & $utf8_3byte_bmask) == $utf8_3byte) {
+        $mb_char .= $input[++$i];
+        $mb_char .= $input[++$i];
+      }
+      else if (($byte & $utf8_4byte_bmask) == $utf8_4byte) {
+        // Replace with ? to avoid MySQL exception
+        //$mb_char = '?';
+        $mb_char = ' ';
+        $i += 3;
+      }
+      $sanitized .=  $mb_char;
+    }
+    $input= $sanitized;
+  }
+  return $input;
+}
+
+/**
+ * Is come from mobile and weixin
+ */
+function _is_mobile_weixin_access(){
+  if(_is_iphone_ios6_access() || _is_android_phone_access()) {
+    //return TRUE; //test accout can not get the right $_SERVER['HTTP_COOKIE'] value
+
+    $http_user_agent = $_SERVER['HTTP_USER_AGENT'];
+    $detect = '/MicroMessenger/';
+    if (preg_match($detect, $http_user_agent))
+      return TRUE;
+  } 
+  return FALSE;
+}
+
+/**
+ * determine ajax call
+ */
+function _is_ajax_call() {
+  return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest';
+}

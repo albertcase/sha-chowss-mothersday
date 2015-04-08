@@ -1,0 +1,6 @@
+name = CHOWSS Mother`s Day Campaign API
+description = CHOWSS Mother`s Day Campaign
+package = CHOWSSMSD
+core = 7.x
+
+dependencies[] = user

@@ -1,0 +1,124 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function cssmsd_api_menu() {
+  $items = array();
+
+  $items['api/user_login'] = array(
+    'title' => t('Ajax API testing'),
+    'page callback' => '_user_login',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
+  $items['api/test'] = array(
+    'title' => t('Ajax API testing'),
+    'page callback' => '_test',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
+  return $items;
+}
+
+ /**
+ * test
+ */
+ function _test() {
+
+ 	//_retrieve_store_lat_long();
+ }
+
+ /**
+  *
+  * Get nearest store by latitude and longitude
+  *
+  * @param latitude, $longitude
+  * @return node
+  *
+  */
+ function _get_nearest_store($latitude, $longitude) {
+	$nodes = node_load_multiple(array(), array('type' => 'chowssmsd_stores'));
+	$store = array();
+	foreach($nodes as $node){
+		$latitude_end = $node->field_chowssmsd_store_latitude[LANGUAGE_NONE][0]['value'];
+		$longitude_end = $node->field_chowssmsd_store_longitude[LANGUAGE_NONE][0]['value'];
+		$store[$node->nid] = _get_distance_between_points($latitude, $longitude, $latitude_end, $longitude_end);
+	}
+	asort($store);
+ 	$nids = array_keys($store);
+ 	$nid = reset($nids);
+ 	return node_load($nid);
+
+ }
+
+ /**
+  *
+  * Get distance between points by latitude and longitude
+  *
+  * @param $latitude1, $longitude1, $latitude2, $longitude2
+  * @return array
+  *
+  */
+function _get_distance_between_points($latitude1, $longitude1, $latitude2, $longitude2) {
+    $theta = $longitude1 - $longitude2;
+    $miles = (sin(deg2rad($latitude1)) * sin(deg2rad($latitude2))) + (cos(deg2rad($latitude1)) * cos(deg2rad($latitude2)) * cos(deg2rad($theta)));
+    $miles = acos($miles);
+    $miles = rad2deg($miles);
+    $miles = $miles * 60 * 1.1515;
+    $meters = $kilometers * 1000;
+    return $meters;
+}
+
+ /**
+  *
+  * User Login
+  *
+  * @param 
+  * @return
+  *
+  */
+function _user_login(){
+
+  	global $user;
+
+	if(!$user->uid) {
+		$tracking_key = _tracking_key_generate();
+		$account = db_query('SELECT 1 FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
+		if(!$account) {
+			// organize user data
+			$edit = array();
+			$edit['name'] = $tracking_key;
+			$edit['mail'] = $edit['init'] = $tracking_key . '@fake.com';
+			$edit['status'] = 1;
+			$edit['access'] = REQUEST_TIME;
+			$user = user_save(NULL, $edit);
+			user_login_finalize();  	
+		}
+	}
+}
+ /**
+  *
+  * Generate tracking key.
+  *
+  * @param 
+  * @return uuid
+  *
+  */
+function _tracking_key_generate() {
+
+	global $user;
+
+	$expire_days = 360;
+
+	if(isset($_COOKIE['_ddmstkey'])) 
+		return $_COOKIE['_ddmstkey'];
+
+	$tracking_key = uuid_generate();
+	setcookie('_ddmstkey', $tracking_key, time() + 3600 * 24 * $expire_days, '/');
+	return $tracking_key;
+
+}
+
