@@ -1,0 +1,16 @@
+name = CSSMSD User
+core = 7.x
+package = CSSMSD
+version = 7.x-1.0
+project = cssmsd_feature_user
+dependencies[] = entityreference
+dependencies[] = features
+dependencies[] = text
+features[features_api][] = api:2
+features[field_base][] = field_user_latitude
+features[field_base][] = field_user_longitude
+features[field_base][] = field_user_nearnest_store
+features[field_instance][] = user-user-field_user_latitude
+features[field_instance][] = user-user-field_user_longitude
+features[field_instance][] = user-user-field_user_nearnest_store
+project path = sites/default/modules/cssmsd_features

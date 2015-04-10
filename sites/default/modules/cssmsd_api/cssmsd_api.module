@@ -36,21 +36,46 @@ function cssmsd_api_menu() {
  * test
  */
  function _test() {
- 	$nid = 2;
+
+ 	_get_prize_by_nid(2)
+
+ 	//_retrieve_store_lat_long();
+ }
+
+ /**
+  *
+  * Get prize by nid
+  *
+  * @param $nid
+  * @return term
+  *
+  */
+ function _get_prize_by_nid($nid) {
+
  	$item_ids = node_load($nid)->field_chowssmsd_store_prize[LANGUAGE_NONE];
  	$prizes = array();
+
  	foreach($item_ids as $item_id) {
  		$item = field_collection_item_load($item_id['value']);
  		$tid = $item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'];
  		$quantity = $item->field_chowssmsd_prize_quantity[LANGUAGE_NONE][0]['value'];
  		$used = _get_prize_used_quantity($nid, $tid);
- 		//if($item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'])
- 		//if($item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'])
- 		//if($item->)
- 		var_dump($item->field_chowssmsd_prize_quantity[LANGUAGE_NONE][0]['value']);exit;
+ 		if($used < $quantity) {
+ 			$prizes[] = $tid;
+ 		}
  	}
- 	
- 	//_retrieve_store_lat_long();
+
+	$virtual_tid = array_shift(taxonomy_get_term_by_name('Virtual'))->tid;
+	$virtual_prizes = taxonomy_get_children($virtual_tid);
+
+	foreach($virtual_prizes as $prize) {
+		if(_get_virtual_prize_quantity($tid) > 0)
+			$prizes[] = $tid;
+	}
+
+	$probability = split('/', variable_get('cssmsd_api_prize_probability', NULL));
+	if(mt_rand(0, $probability[1]) <= $probability[0])
+		
  }
 
  /**
@@ -84,6 +109,17 @@ function cssmsd_api_menu() {
 
  /**
   *
+  * Get number of virtual prize
+  *
+  * @param $tid
+  * @return number string
+  *
+  */
+ function _get_virtual_prize_quantity($tid) {
+ 	return 100;
+ }
+ /**
+  *
   * Create prize log
   *
   * @param 
@@ -101,7 +137,7 @@ function cssmsd_api_menu() {
   * Get nearest store by latitude and longitude
   *
   * @param latitude, $longitude
-  * @return node
+  * @return nid
   *
   */
  function _get_nearest_store($latitude, $longitude) {
@@ -115,7 +151,7 @@ function cssmsd_api_menu() {
 	asort($store);
  	$nids = array_keys($store);
  	$nid = reset($nids);
- 	return node_load($nid);
+ 	return $nid;
 
  }
 
