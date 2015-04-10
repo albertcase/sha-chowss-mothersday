@@ -1,4 +1,4 @@
 name = CHOWSS Mother`s Day Campaign Base Module
 description = Base module, to share common functions
-package = CHOWSSMSD
+package = CSSMSD
 core = 7.x

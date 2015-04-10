@@ -1,0 +1,44 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the ssmsd_api module.
+ *
+ */
+
+/**
+ * Implements hook_schema()
+ */
+function cssmsd_api_schema() {
+  $schema['cssmsd_coupon'] = array(
+    'description' => "The coupon list",
+    'fields' => array(
+      'coupon_code' => array(
+        'description' => "Coupon code",
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => "Type of coupon code",
+        'type' => 'int',
+        'length' => 11,
+        'default' => 0,
+        'not null' => TRUE,
+      ),
+      'status' => array(
+        'description' => "Status",
+        'type' => 'int',
+        'length' => 1,
+        'default' => 0,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('coupon_code'),
+    'indexes' => array('type' => array('type', 'status')),
+  );
+
+  return $schema;
+}
+
