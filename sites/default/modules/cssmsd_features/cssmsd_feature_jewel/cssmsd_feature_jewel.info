@@ -1,0 +1,16 @@
+name = CSSMSD Jewel
+core = 7.x
+package = CSSMSD
+version = 7.x-1.0
+project = cssmsd_feature_jewel
+dependencies[] = entityreference
+dependencies[] = features
+dependencies[] = image
+dependencies[] = options
+features[features_api][] = api:2
+features[field_base][] = field_chowssmsd_jewel_monther
+features[field_base][] = field_chowssmsd_jewel_pic
+features[field_instance][] = node-chowssmsd_jewel-field_chowssmsd_jewel_monther
+features[field_instance][] = node-chowssmsd_jewel-field_chowssmsd_jewel_pic
+features[node][] = chowssmsd_jewel
+project path = sites/default/modules/cssmsd_features

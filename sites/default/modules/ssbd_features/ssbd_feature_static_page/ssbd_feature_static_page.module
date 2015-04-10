@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the SSBD Static Page feature.
+ */
+
+include_once 'ssbd_feature_static_page.features.inc';

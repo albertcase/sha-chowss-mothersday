@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the CSSMSD Monther Type feature.
+ */
+
+include_once 'cssmsd_feature_monther_type.features.inc';

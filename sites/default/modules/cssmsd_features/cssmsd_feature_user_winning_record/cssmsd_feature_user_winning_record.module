@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the CSSMSD User Winning Record feature.
+ */
+
+include_once 'cssmsd_feature_user_winning_record.features.inc';

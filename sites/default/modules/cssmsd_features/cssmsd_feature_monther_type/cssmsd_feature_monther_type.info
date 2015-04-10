@@ -1,0 +1,17 @@
+name = CSSMSD Monther Type
+core = 7.x
+package = CSSMSD
+version = 7.x-1.0
+project = cssmsd_feature_monther_type
+dependencies[] = features
+dependencies[] = image
+dependencies[] = text
+features[features_api][] = api:2
+features[field_base][] = body
+features[field_base][] = field_chowssmsd_monther_pic
+features[field_base][] = field_chowssmsd_monther_weight
+features[field_instance][] = node-chowssmsd_monther_type-body
+features[field_instance][] = node-chowssmsd_monther_type-field_chowssmsd_monther_pic
+features[field_instance][] = node-chowssmsd_monther_type-field_chowssmsd_monther_weight
+features[node][] = chowssmsd_monther_type
+project path = sites/default/modules/cssmsd_features

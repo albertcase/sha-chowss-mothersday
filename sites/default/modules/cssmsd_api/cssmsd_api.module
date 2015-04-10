@@ -13,6 +13,15 @@ function cssmsd_api_menu() {
     'access callback' => TRUE,
   );
 
+  $items['admin/config/cssmsd/prize'] = array(
+    'title' => 'CSSMSD Lucky Set',
+    'description' => 'Configure required settings for Lucky',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cssmsd_api_settings_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'cssmsd_api.pages.inc',
+  );
+
   $items['api/test'] = array(
     'title' => t('Ajax API testing'),
     'page callback' => '_test',
@@ -27,8 +36,64 @@ function cssmsd_api_menu() {
  * test
  */
  function _test() {
-
+ 	$nid = 2;
+ 	$item_ids = node_load($nid)->field_chowssmsd_store_prize[LANGUAGE_NONE];
+ 	$prizes = array();
+ 	foreach($item_ids as $item_id) {
+ 		$item = field_collection_item_load($item_id['value']);
+ 		$tid = $item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'];
+ 		$quantity = $item->field_chowssmsd_prize_quantity[LANGUAGE_NONE][0]['value'];
+ 		$used = _get_prize_used_quantity($nid, $tid);
+ 		//if($item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'])
+ 		//if($item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'])
+ 		//if($item->)
+ 		var_dump($item->field_chowssmsd_prize_quantity[LANGUAGE_NONE][0]['value']);exit;
+ 	}
+ 	
  	//_retrieve_store_lat_long();
+ }
+
+ /**
+  *
+  * Check prize by LBS
+  *
+  * @param latitude, $longitude
+  * @return code
+  *
+  */
+ function _show_prize_by_lbs() {
+ 	$latitude = $_POST['data']['latitude'];
+ 	$longitude = $_POST['data']['longitude'];
+	$node = _get_nearest_store($latitude, $longitude);
+
+	
+
+ }
+
+ /**
+  *
+  * Get prize number which has been used
+  *
+  * @param $nid, $tid
+  * @return number string
+  *
+  */
+ function _get_prize_used_quantity($nid, $tid) {
+ 	return 100;
+ }
+
+ /**
+  *
+  * Create prize log
+  *
+  * @param 
+  * @return 
+  *
+  */
+ function _create_prize_log() {
+
+	
+
  }
 
  /**
@@ -80,7 +145,7 @@ function _get_distance_between_points($latitude1, $longitude1, $latitude2, $long
   * @return
   *
   */
-function _user_login(){
+function _user_login() {
 
   	global $user;
 
