@@ -13,7 +13,11 @@ function cssmsd_feature_stores_field_default_field_instances() {
   // Exported field_instance: 'field_collection_item-field_chowssmsd_store_prize-field_chowssmsd_prize_name'
   $field_instances['field_collection_item-field_chowssmsd_store_prize-field_chowssmsd_prize_name'] = array(
     'bundle' => 'field_chowssmsd_store_prize',
-    'default_value' => NULL,
+    'default_value' => array(
+      0 => array(
+        'tid' => 10,
+      ),
+    ),
     'deleted' => 0,
     'description' => '',
     'display' => array(
@@ -34,9 +38,9 @@ function cssmsd_feature_stores_field_default_field_instances() {
     ),
     'widget' => array(
       'active' => 1,
-      'module' => 'options',
+      'module' => 'hs_taxonomy',
       'settings' => array(),
-      'type' => 'options_select',
+      'type' => 'taxonomy_hs',
       'weight' => 1,
     ),
   );
