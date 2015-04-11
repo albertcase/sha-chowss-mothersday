@@ -7,8 +7,15 @@ function cssmsd_api_menu() {
   $items = array();
 
   $items['api/user_login'] = array(
-    'title' => t('Ajax API testing'),
-    'page callback' => '_user_login',
+    'title' => t('Ajax API user login'),
+    'page callback' => '_user_login_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
+  $items['api/crown'] = array(
+    'title' => t('Ajax API crown'),
+    'page callback' => '_crown_api',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
   );
@@ -33,13 +40,113 @@ function cssmsd_api_menu() {
 }
 
  /**
+  *
+  * User Login API
+  *
+  * @param 
+  * @return
+  *
+  */
+function _user_login_api() {
+
+  	global $user;
+
+	if(!$user->uid) {
+		$tracking_key = _tracking_key_generate();
+		$account = db_query('SELECT 1 FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
+		if(!$account) {
+			// organize user data
+			$edit = array();
+			$edit['name'] = $tracking_key;
+			$edit['mail'] = $edit['init'] = $tracking_key . '@fake.com';
+			$edit['status'] = 1;
+			$edit['access'] = REQUEST_TIME;
+			$user = user_save(NULL, $edit);
+			user_login_finalize();  	
+		}
+	}
+}
+
+ /**
  * test
  */
  function _test() {
-
- 	_get_prize_by_nid(2)
+var_dump($_SERVER['REQUEST_METHOD']);exit;
+ 	var_dump(_get_prize_by_nid(2));
 
  	//_retrieve_store_lat_long();
+ }
+
+ /**
+  *
+  * Crown API
+  *
+  * @return status
+  *
+  */
+ function _crown_api() {
+
+ 	$fields = array('method' => 'GET');
+ 	_input_validation_and_format($fields);
+ 	
+
+
+ }
+
+ /**
+  *
+  * Format the input data and return the format data
+  *
+  * @return object
+  *
+  */
+ function _input_validation_and_format($fields) {
+
+ 	global $user;
+
+ 	if(!$user->uid)
+ 		_print_error('001');
+
+ 	if(!isset($fields['method']) || !in_array($fields['method'], array('POST', 'GET')))
+ 		_print_error('002');
+
+ 	if($fields['method'] == 'POST' && $_SERVER['REQUEST_METHOD'] !== 'POST')
+ 		_print_error('003');
+
+ 	if($fields['method'] == 'GET' && $_SERVER['REQUEST_METHOD'] !== 'GET')
+ 		_print_error('003');
+
+ 	if($fields['method'] == 'POST') {
+	 	foreach($fields as $field => $type) {
+
+	 		$value = $_POST[$field];
+
+	 		if($type == 'notnull' && empty($value))
+	          return _print_error('999');
+
+	        if($type == 'date' && !strtotime($value))
+	          return _print_error('999');
+
+	        if($type == 'file' && !file_load($value))
+	          return _print_error('999');
+	 	}
+ 	}
+
+
+ }
+
+
+ /**
+  *
+  * Format the output error
+  *
+  * @param sting
+  *
+  */
+ function _print_error($code) {
+ 	$arr = array('status' => $code);
+ 	print json_encode($arr);
+ 	exit;
  }
 
  /**
@@ -51,10 +158,10 @@ function cssmsd_api_menu() {
   *
   */
  function _get_prize_by_nid($nid) {
-
+ 	//get the entity prize tid
  	$item_ids = node_load($nid)->field_chowssmsd_store_prize[LANGUAGE_NONE];
  	$prizes = array();
-
+ 	
  	foreach($item_ids as $item_id) {
  		$item = field_collection_item_load($item_id['value']);
  		$tid = $item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'];
@@ -65,17 +172,28 @@ function cssmsd_api_menu() {
  		}
  	}
 
+ 	//get the coupon prize tid
 	$virtual_tid = array_shift(taxonomy_get_term_by_name('Virtual'))->tid;
 	$virtual_prizes = taxonomy_get_children($virtual_tid);
-
+	
 	foreach($virtual_prizes as $prize) {
-		if(_get_virtual_prize_quantity($tid) > 0)
-			$prizes[] = $tid;
+		if(_get_virtual_prize_quantity($prize->tid) > 0)
+			$prizes[] = $prize->tid;
 	}
 
 	$probability = split('/', variable_get('cssmsd_api_prize_probability', NULL));
-	if(mt_rand(0, $probability[1]) <= $probability[0])
-		
+
+	//return the prize tid by probability
+	if(mt_rand(0, $probability[1]) <= $probability[0]) {
+		$random_index = array_rand($prizes, 1);
+		$prize_tid = $prizes[$random_index];
+		return $prize_tid;
+	}
+
+	$prize_tid = array_shift(taxonomy_get_term_by_name('实体店200元优惠券'))->tid;
+
+	return $prize_tid;
+
  }
 
  /**
@@ -104,7 +222,7 @@ function cssmsd_api_menu() {
   *
   */
  function _get_prize_used_quantity($nid, $tid) {
- 	return 100;
+ 	return 1;
  }
 
  /**
@@ -173,33 +291,6 @@ function _get_distance_between_points($latitude1, $longitude1, $latitude2, $long
     return $meters;
 }
 
- /**
-  *
-  * User Login
-  *
-  * @param 
-  * @return
-  *
-  */
-function _user_login() {
-
-  	global $user;
-
-	if(!$user->uid) {
-		$tracking_key = _tracking_key_generate();
-		$account = db_query('SELECT 1 FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
-		if(!$account) {
-			// organize user data
-			$edit = array();
-			$edit['name'] = $tracking_key;
-			$edit['mail'] = $edit['init'] = $tracking_key . '@fake.com';
-			$edit['status'] = 1;
-			$edit['access'] = REQUEST_TIME;
-			$user = user_save(NULL, $edit);
-			user_login_finalize();  	
-		}
-	}
-}
  /**
   *
   * Generate tracking key.
