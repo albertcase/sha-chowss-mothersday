@@ -1,0 +1,14 @@
+name = CSSMSD Crown Record
+core = 7.x
+package = CSSMSD
+version = 7.x-1.0
+project = cssmsd_feature_crown_record
+dependencies[] = entityreference
+dependencies[] = features
+features[features_api][] = api:2
+features[field_base][] = field_chowssmsd_crown_part
+features[field_base][] = field_chowssmsd_crown_recipient
+features[field_instance][] = node-chowssmsd_crown_record-field_chowssmsd_crown_part
+features[field_instance][] = node-chowssmsd_crown_record-field_chowssmsd_crown_recipient
+features[node][] = chowssmsd_crown_record
+project path = sites/default/modules/cssmsd_features
