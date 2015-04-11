@@ -71,8 +71,6 @@ function _user_login_api() {
  * test
  */
  function _test() {
-var_dump($_SERVER['REQUEST_METHOD']);exit;
- 	var_dump(_get_prize_by_nid(2));
 
  	//_retrieve_store_lat_long();
  }
@@ -87,11 +85,135 @@ var_dump($_SERVER['REQUEST_METHOD']);exit;
  function _crown_api() {
 
  	$fields = array('method' => 'GET');
+
  	_input_validation_and_format($fields);
- 	
+
+	$bundle = 'chowssmsd_crown_record';
+
+	$condition = array(
+		'bundle' => $bundle,
+		'condition' => array(
+			'field_chowssmsd_crown_recipient' => array('target_id' => $recipient), 
+			'field_chowssmsd_crown_part' => array('target_id' => $user->uid),
+			),
+		);
+	$results = _node_query($condition);
+
+	if($results) 
+		_print_status('011'); //already crowned
+	else
+		$counts = _create_crown_record($recipient);	
+
+	
+	if(count($counts)%2 == 0)
+		_push_wechat_message($recipient);
+
+	_print_status('1'); //success
+
+ }
+
+ /**
+  *
+  * Push the message to wechat
+  *
+  * @param $recipient
+  *
+  */
+ function _push_wechat_message($recipient) {
 
 
  }
+
+ /**
+  *
+  * Create crown record
+  *
+  * @return crown count
+  *
+  */
+ function _create_crown_record($recipient) {
+
+	global $user;
+
+	if($recipient == $user->uid)
+		_print_status('010'); //can not crown by yourself
+
+	$node = new stdClass();
+	node_object_prepare($node);
+	$node->type = $bundle;
+	$node->language = LANGUAGE_NONE;
+	$node->status = 0;
+	$node->title = $recipient;
+	$node->field_chowssmsd_crown_recipient[LANGUAGE_NONE][0]['target_id'] = $recipient;
+	$node->field_chowssmsd_crown_part[LANGUAGE_NONE][0]['target_id'] = $user->uid;
+	node_save($node);
+
+	$condition = array(
+		'bundle' => $bundle,
+		'condition' => array(
+			'field_chowssmsd_crown_recipient' => array('target_id' => $recipient), 
+			),
+		);
+	$results = _node_query($condition);
+
+	return count($results);	
+
+ }
+
+/**
+ *
+ * Node query
+ * 
+ * @param condition array
+ * @return nids array
+ *
+ */
+function _node_query($condition) {
+
+	$query = new EntityFieldQuery;
+	$property = array('title', 'created');
+
+	if(isset($condition['bundle'])){
+		$query->entityCondition('entity_type', 'node');
+		$query->entityCondition('bundle', $condition['bundle']);
+		$query->propertyCondition('status', 0);
+
+		if(isset($condition['condition'])) {
+
+			foreach($condition['condition'] as $field => $value) {
+
+				if(in_array($field, $property))
+					$query->propertyCondition('title', $value);
+
+				if(isset($value['target_id']))
+					$query->fieldCondition($field, 'target_id', $value['target_id'], '=');
+
+				if(isset($value['value']))
+					$query->fieldCondition($field, 'value', $value['value'], '=');
+			}
+		}
+
+
+		if(isset($condition['orderby'])){
+			
+			if(in_array($condition['orderby'][0], $property))
+				$query->propertyOrderBy($condition['orderby'][0], $condition['orderby'][1]);
+			else 
+				$query->fieldOrderBy($condition['orderby'][0], 'value', $condition['orderby'][1]);
+
+		}
+
+		$results = $query->execute();
+
+		if($results) {
+			$nids = array_keys($results['node']);
+			return $nids;
+		}
+	}
+
+	return array();
+
+}
 
  /**
   *
@@ -105,16 +227,16 @@ var_dump($_SERVER['REQUEST_METHOD']);exit;
  	global $user;
 
  	if(!$user->uid)
- 		_print_error('001');
+ 		_print_status('001'); //not login
 
  	if(!isset($fields['method']) || !in_array($fields['method'], array('POST', 'GET')))
- 		_print_error('002');
+ 		_print_status('002'); //The method must be set
 
  	if($fields['method'] == 'POST' && $_SERVER['REQUEST_METHOD'] !== 'POST')
- 		_print_error('003');
+ 		_print_status('003'); //wrong request method
 
  	if($fields['method'] == 'GET' && $_SERVER['REQUEST_METHOD'] !== 'GET')
- 		_print_error('003');
+ 		_print_status('003'); //wrong request method
 
  	if($fields['method'] == 'POST') {
 	 	foreach($fields as $field => $type) {
@@ -122,13 +244,13 @@ var_dump($_SERVER['REQUEST_METHOD']);exit;
 	 		$value = $_POST[$field];
 
 	 		if($type == 'notnull' && empty($value))
-	          return _print_error('999');
+	          return _print_status('999'); //unknow error
 
 	        if($type == 'date' && !strtotime($value))
-	          return _print_error('999');
+	          return _print_status('999'); //unknow error
 
 	        if($type == 'file' && !file_load($value))
-	          return _print_error('999');
+	          return _print_status('999'); //unknow error
 	 	}
  	}
 
@@ -138,12 +260,12 @@ var_dump($_SERVER['REQUEST_METHOD']);exit;
 
  /**
   *
-  * Format the output error
+  * Format the output status
   *
   * @param sting
   *
   */
- function _print_error($code) {
+ function _print_status($code) {
  	$arr = array('status' => $code);
  	print json_encode($arr);
  	exit;
@@ -238,13 +360,13 @@ var_dump($_SERVER['REQUEST_METHOD']);exit;
  }
  /**
   *
-  * Create prize log
+  * Create winning record
   *
   * @param 
   * @return 
   *
   */
- function _create_prize_log() {
+ function _create_winning_record() {
 
 	
 
