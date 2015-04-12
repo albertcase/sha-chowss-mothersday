@@ -12,11 +12,18 @@ function cssmsd_api_settings_form($form, &$form_state) {
     '#default_value' => variable_get('cssmsd_api_prize_probability', NULL),
   );
 
+  $form['cssmsd_api_prize_access_code'] = array(
+    '#title' => t('Access code'),
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#default_value' => variable_get('cssmsd_api_prize_access_code', NULL),
+  );
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save settings'),
   );
-  
+
   return $form;
 }
 
@@ -27,6 +34,7 @@ function cssmsd_api_settings_form($form, &$form_state) {
 function cssmsd_api_settings_form_submit($form, &$form_state) {
 
   variable_set('cssmsd_api_prize_probability', $form_state['values']['cssmsd_api_prize_probability']);
+  variable_set('cssmsd_api_prize_access_code', $form_state['values']['cssmsd_api_prize_access_code']);
 
   drupal_set_message(t('Your configuration have been saved.'));
 }
