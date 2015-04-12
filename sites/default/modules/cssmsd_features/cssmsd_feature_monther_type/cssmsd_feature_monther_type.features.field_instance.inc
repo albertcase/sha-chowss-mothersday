@@ -10,6 +10,43 @@
 function cssmsd_feature_monther_type_field_default_field_instances() {
   $field_instances = array();
 
+  // Exported field_instance: 'field_collection_item-field_chowssmsd_monther_jewel-field_chowssmsd_jewel_name'
+  $field_instances['field_collection_item-field_chowssmsd_monther_jewel-field_chowssmsd_jewel_name'] = array(
+    'bundle' => 'field_chowssmsd_monther_jewel',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'entityreference',
+        'settings' => array(
+          'link' => FALSE,
+        ),
+        'type' => 'entityreference_label',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'field_collection_item',
+    'field_name' => 'field_chowssmsd_jewel_name',
+    'label' => 'Jewel Name',
+    'required' => 1,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'entityreference',
+      'settings' => array(
+        'match_operator' => 'CONTAINS',
+        'path' => '',
+        'size' => 60,
+      ),
+      'type' => 'entityreference_autocomplete',
+      'weight' => 1,
+    ),
+  );
+
   // Exported field_instance: 'node-chowssmsd_monther_type-body'
   $field_instances['node-chowssmsd_monther_type-body'] = array(
     'bundle' => 'chowssmsd_monther_type',
@@ -51,6 +88,47 @@ function cssmsd_feature_monther_type_field_default_field_instances() {
       ),
       'type' => 'text_textarea_with_summary',
       'weight' => 3,
+    ),
+  );
+
+  // Exported field_instance: 'node-chowssmsd_monther_type-field_chowssmsd_monther_jewel'
+  $field_instances['node-chowssmsd_monther_type-field_chowssmsd_monther_jewel'] = array(
+    'bundle' => 'chowssmsd_monther_type',
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'field_collection',
+        'settings' => array(
+          'add' => 'Add',
+          'delete' => 'Delete',
+          'description' => TRUE,
+          'edit' => 'Edit',
+          'view_mode' => 'full',
+        ),
+        'type' => 'field_collection_view',
+        'weight' => 3,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_chowssmsd_monther_jewel',
+    'label' => 'Jewel',
+    'required' => FALSE,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'module' => 'field_collection',
+      'settings' => array(),
+      'type' => 'field_collection_embed',
+      'weight' => 4,
     ),
   );
 
@@ -140,13 +218,15 @@ function cssmsd_feature_monther_type_field_default_field_instances() {
         'size' => 60,
       ),
       'type' => 'text_textfield',
-      'weight' => 4,
+      'weight' => 5,
     ),
   );
 
   // Translatables
   // Included for use with string extractors like potx.
   t('Body');
+  t('Jewel');
+  t('Jewel Name');
   t('Picture');
   t('Weight');
 
