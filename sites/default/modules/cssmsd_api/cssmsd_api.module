@@ -13,6 +13,13 @@ function cssmsd_api_menu() {
     'access callback' => TRUE,
   );
 
+  $items['api/mother_list'] = array(
+    'title' => t('Ajax API crown'),
+    'page callback' => '_mother_list_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
   $items['api/crown'] = array(
     'title' => t('Ajax API crown'),
     'page callback' => '_crown_api',
@@ -39,17 +46,15 @@ function cssmsd_api_menu() {
   return $items;
 }
 
- /**
-  *
-  * User Login API
-  *
-  * @param 
-  * @return
-  *
-  */
+/**
+ *
+ * User Login API
+ *
+ *
+ */
 function _user_login_api() {
 
-  	global $user;
+	global $user;
 
 	if(!$user->uid) {
 		$tracking_key = _tracking_key_generate();
@@ -71,22 +76,49 @@ function _user_login_api() {
  * test
  */
  function _test() {
-
+	//_mother_list_api();
  	//_retrieve_store_lat_long();
  }
 
- /**
-  *
-  * Crown API
-  *
-  * @return status
-  *
-  */
- function _crown_api() {
+/**
+ *
+ * Get mother list
+ *
+ *
+ */
+function _mother_list_api() {
 
- 	$fields = array('method' => 'GET');
+	$fields = array('method' => 'GET');
 
- 	_input_validation_and_format($fields);
+	_input_validation_and_format($fields);
+
+	$bundle = 'chowssmsd_monther_type';
+
+	$condition = array(
+		'bundle' => $bundle,
+		'orderby' => array('field_chowssmsd_monther_weight', 'ASC'),
+		);
+
+	$results = _node_query($condition);
+
+	$output = _mother_output_format($results);
+
+	print json_encode(array('status' => 1, 'data' => $output)); //success
+
+}
+
+/**
+ *
+ * Crown API
+ *
+ * @return status
+ *
+ */
+function _crown_api() {
+
+	$fields = array('method' => 'GET');
+
+	_input_validation_and_format($fields);
 
 	$bundle = 'chowssmsd_crown_record';
 
@@ -104,34 +136,95 @@ function _user_login_api() {
 	else
 		$counts = _create_crown_record($recipient);	
 
-	
+
 	if(count($counts)%2 == 0)
 		_push_wechat_message($recipient);
 
-	_print_status('1'); //success
+	print json_encode(array('status' => 1, 'counts' => $counts)); //success
 
- }
+}
 
- /**
-  *
-  * Push the message to wechat
-  *
-  * @param $recipient
-  *
-  */
- function _push_wechat_message($recipient) {
+/**
+ *
+ * Fomat mother data
+ *
+ * @param $nid
+ * @return json
+ *
+ */
+function _mother_output_format($nids) {
+
+	$output = array();
+
+	foreach($nids as $nid) {
+		$data = new stdClass();
+		$node = node_load($nid);
+		$data->mother_nid = $node->nid;
+		$data->name = $node->title;
+		$data->description = $node->body[LANGUAGE_NONE][0]['value'];
+		$data->pic_thumbnail = image_style_url('cssmsd_mother_pic_s', $node->field_chowssmsd_monther_pic[LANGUAGE_NONE][0]['uri']);
+
+	 	$item_ids = $node->field_chowssmsd_monther_jewel[LANGUAGE_NONE];
+	 	$jewel_nids = array();
+	 	foreach($item_ids as $item_id) {
+	 		$item = field_collection_item_load($item_id['value']);
+	 		$nid = $item->field_chowssmsd_jewel_name[LANGUAGE_NONE][0]['target_id'];
+	 		$jewel_nids[] = $nid;
+	 	}
+
+		$data->jewel = _jewel_output_format($jewel_nids);
+		$output[] = $data;
+	}
+
+	return $output;
+
+}
+
+/**
+ *
+ * Fomat Jewel data
+ *
+ * @param $nid
+ * @return json
+ *
+ */
+function _jewel_output_format($nids) {
+
+	$output = array();
+
+	foreach($nids as $nid) {
+		$data = new stdClass();
+		$node = node_load($nid);
+		$data->jewel_nid = $node->nid;
+		$data->name = $node->title;
+		$data->pic_thumbnail = image_style_url('cssmsd_jewel_pic_thumb', $node->field_chowssmsd_jewel_pic[LANGUAGE_NONE][0]['uri']);
+		$output[] = $data;
+	}
+
+	return $output;
+
+}
+
+/**
+ *
+ * Push the message to wechat
+ *
+ * @param $recipient
+ *
+ */
+function _push_wechat_message($recipient) {
 
 
- }
+}
 
- /**
-  *
-  * Create crown record
-  *
-  * @return crown count
-  *
-  */
- function _create_crown_record($recipient) {
+/**
+ *
+ * Create crown record
+ *
+ * @return crown count
+ *
+ */
+function _create_crown_record($recipient) {
 
 	global $user;
 
@@ -158,7 +251,7 @@ function _user_login_api() {
 
 	return count($results);	
 
- }
+}
 
 /**
  *
@@ -312,7 +405,7 @@ function _node_query($condition) {
 		return $prize_tid;
 	}
 
-	$prize_tid = array_shift(taxonomy_get_term_by_name('实体店200元优惠券'))->tid;
+	$prize_tid = array_shift(taxonomy_get_term_by_name('门店200元优惠券'))->tid;
 
 	return $prize_tid;
 
