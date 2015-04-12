@@ -13,5 +13,7 @@ features[field_base][] = field_chowssmsd_monther_weight
 features[field_instance][] = node-chowssmsd_monther_type-body
 features[field_instance][] = node-chowssmsd_monther_type-field_chowssmsd_monther_pic
 features[field_instance][] = node-chowssmsd_monther_type-field_chowssmsd_monther_weight
+features[image][] = cssmsd_mother_pic_l
+features[image][] = cssmsd_mother_pic_s
 features[node][] = chowssmsd_monther_type
 project path = sites/default/modules/cssmsd_features

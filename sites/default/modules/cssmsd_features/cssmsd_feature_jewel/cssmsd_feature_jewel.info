@@ -12,5 +12,6 @@ features[field_base][] = field_chowssmsd_jewel_monther
 features[field_base][] = field_chowssmsd_jewel_pic
 features[field_instance][] = node-chowssmsd_jewel-field_chowssmsd_jewel_monther
 features[field_instance][] = node-chowssmsd_jewel-field_chowssmsd_jewel_pic
+features[image][] = cssmsd_jewel_pic_thumb
 features[node][] = chowssmsd_jewel
 project path = sites/default/modules/cssmsd_features
