@@ -14,7 +14,7 @@ function cssmsd_api_menu() {
   );
 
   $items['api/mother_list'] = array(
-    'title' => t('Ajax API crown'),
+    'title' => t('Ajax API Mother list'),
     'page callback' => '_mother_list_api',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
@@ -502,7 +502,7 @@ function _node_query($condition) {
  	global $user;
 
  	if(!$user->uid)
- 		_print_status('001'); //not login
+ 		_print_status('001'); //user not login
 
  	if(!isset($input['method']) || !in_array($input['method'], array('POST', 'GET')))
  		_print_status('002'); //The method must be set
