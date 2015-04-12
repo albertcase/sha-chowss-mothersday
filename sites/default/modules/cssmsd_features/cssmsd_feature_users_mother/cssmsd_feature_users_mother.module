@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the CSSMSD User`s Mother feature.
+ */
+
+include_once 'cssmsd_feature_users_mother.features.inc';
