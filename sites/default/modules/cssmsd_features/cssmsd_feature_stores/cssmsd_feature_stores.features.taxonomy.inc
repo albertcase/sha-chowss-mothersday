@@ -36,7 +36,7 @@ function cssmsd_feature_stores_taxonomy_default_vocabularies() {
       'name' => 'Prizes',
       'machine_name' => 'chowssmsd_prizes',
       'description' => '',
-      'hierarchy' => 1,
+      'hierarchy' => 0,
       'module' => 'taxonomy',
       'weight' => 0,
       'rdf_mapping' => array(
