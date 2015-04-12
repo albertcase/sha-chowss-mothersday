@@ -34,6 +34,13 @@ function cssmsd_api_menu() {
     'access callback' => TRUE,
   );
 
+  $items['api/prize_list'] = array(
+    'title' => t('Ajax API Prize List'),
+    'page callback' => '_prize_list_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
   $items['admin/config/cssmsd/prize'] = array(
     'title' => 'CSSMSD Lucky Set',
     'description' => 'Configure required settings for Lucky',
@@ -57,6 +64,7 @@ function cssmsd_api_menu() {
  * test
  */
  function _test() {
+ 	_prize_output_format(99);exit;
 //var_dump(_get_prize_used_quantity(1, 1));exit;
  	_create_winning_record(7);exit;
  	var_dump(_input_validation_and_format(array('method' => 'POST', 'fields' => array('af' => 'notnull', 'dfa' => 'notnull'))));exit;
@@ -193,6 +201,17 @@ function _crown_api() {
 
 	print json_encode(array('status' => 1, 'counts' => $counts)); //success
 
+}
+
+/**
+ *
+ * Prize List API
+ *
+ * @param nid
+ *
+ */
+function _prize_list_api($nid) {
+//_prize_output_format($tid);
 }
 
 /**
@@ -387,6 +406,29 @@ function _get_prize_code($tid) {
 	}
 
 	return $term->name;
+
+}
+
+/**
+ *
+ * Prize output format
+ *
+ * @param tid
+ *
+ */
+function _prize_output_format($tid) {
+
+	$term = taxonomy_term_load($prize_tid);
+	$type = taxonomy_term_load($term->field_chowssmsd_prize_type[LANGUAGE_NONE][0]['tid'])->name;
+
+	// if($term->name == '门店200元优惠券')
+	// 	return substr(uuid_generate(), 0, 8);
+
+	// if($type == 'Coupon'){
+		
+	// }
+
+	// return $term->name;
 
 }
 
