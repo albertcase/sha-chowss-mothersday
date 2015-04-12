@@ -53,6 +53,17 @@ function cssmsd_api_menu() {
   return $items;
 }
 
+ /**
+ * test
+ */
+ function _test() {
+//var_dump(_get_prize_used_quantity(1, 1));exit;
+ 	_create_winning_record(7);exit;
+ 	var_dump(_input_validation_and_format(array('method' => 'POST', 'fields' => array('af' => 'notnull', 'dfa' => 'notnull'))));exit;
+	//_mother_list_api();
+ 	//_retrieve_store_lat_long();
+ }
+
 /**
  *
  * User Login API
@@ -79,19 +90,9 @@ function _user_login_api() {
 	}
 }
 
- /**
- * test
- */
- function _test() {
- 	_create_winning_record(7);exit;
- 	var_dump(_input_validation_and_format(array('method' => 'POST', 'fields' => array('af' => 'notnull', 'dfa' => 'notnull'))));exit;
-	//_mother_list_api();
- 	//_retrieve_store_lat_long();
- }
-
 /**
  *
- * Get mother list
+ * Get mother list API
  *
  *
  */
@@ -351,34 +352,41 @@ function _create_winning_record($recipient) {
 	$store_nid = $user->field_user_nearnest_store[LANGUAGE_NONE][0]['target_id'];
 	$prize_tid = _get_prize_by_store_nid($store_nid);
 	$node->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'] = $prize_tid;
-
-	// $code = db_query('SELECT coupon_code FROM {cssmsd_coupon} WHERE status = :status AND type = :type ORDER BY rand() Limit 1', array(':status' => '0', 'type' => $prize_tid))->fetchField();
-	// $node->field_chowssmsd_prize_code[LANGUAGE_NONE][0]['value'] = $code;
-	
+	$node->field_chowssmsd_prize_code[LANGUAGE_NONE][0]['value'] = _get_prize_code($prize_tid);
 	$node->field_chowssmsd_store_name[LANGUAGE_NONE][0]['target_id'] = $store_nid;
 	
 	node_save($node);
-
-	_update_the_coupon_repertory($node);
 
 }
 
 /**
  *
- * Update the coupon repertory
+ * Get prize code
  *
- * @param node
+ * @param tid
  *
  */
-function _update_the_coupon_repertory($node) {
+function _get_prize_code($tid) {
 
-	$code = $node->field_chowssmsd_prize_code[LANGUAGE_NONE][0]['value'];
+	$term = taxonomy_term_load($tid);
+	$type = taxonomy_term_load($term->field_chowssmsd_prize_type[LANGUAGE_NONE][0]['tid'])->name;
 
-	db_update('cssmsd_coupon')
-			->fields(array(
-			  'status' => 1,
-			))
-			->condition('coupon_code', $code)->execute();
+	if($term->name == '门店200元优惠券')
+		return substr(uuid_generate(), 0, 8);
+
+	if($type == 'Coupon'){
+		$coupon_code = db_query('SELECT coupon_code FROM {cssmsd_coupon} WHERE status = :status AND type = :type ORDER BY rand() Limit 1', array(':status' => '0', 'type' => $tid))->fetchField();
+
+		db_update('cssmsd_coupon')
+				->fields(array(
+				  'status' => 1,
+				))
+				->condition('coupon_code', $coupon_code)
+				->execute();
+		return $coupon_code;		
+	}
+
+	return $term->name;
 
 }
 
@@ -409,6 +417,9 @@ function _node_query($condition) {
 
 				if(isset($value['target_id']))
 					$query->fieldCondition($field, 'target_id', $value['target_id'], '=');
+
+				if(isset($value['tid']))
+					$query->fieldCondition($field, 'tid', $value['tid'], '=');
 
 				if(isset($value['value']))
 					$query->fieldCondition($field, 'value', $value['value'], '=');
@@ -591,12 +602,20 @@ function _node_query($condition) {
   *
   * Get prize number which has been used
   *
-  * @param $nid, $tid
+  * @param $store_nid, $tid
   * @return number string
   *
   */
- function _get_prize_used_quantity($nid, $tid) {
- 	return 1;
+ function _get_prize_used_quantity($store_nid, $tid) {
+ 	$condition = array(
+		'bundle' => 'chowssmsd_winning_record',
+		'condition' => array(
+			'field_chowssmsd_store_name' => array('target_id' => $store_nid), 
+			'field_chowssmsd_prize_name' => array('tid' => $tid), 
+			),
+		);
+	$results = _node_query($condition);
+ 	return count($results);
  }
 
  /**
