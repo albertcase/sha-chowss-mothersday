@@ -15,9 +15,8 @@ function cssmsd_api_schema() {
     'fields' => array(
       'coupon_code' => array(
         'description' => "Coupon code",
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'size' => 'big',
+        'type' => 'varchar',
+        'length' => 255,
         'not null' => TRUE,
       ),
       'type' => array(

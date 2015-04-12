@@ -20,6 +20,13 @@ function cssmsd_api_menu() {
     'access callback' => TRUE,
   );
 
+  $items['api/mother_create'] = array(
+    'title' => t('Ajax API crown'),
+    'page callback' => '_mother_create_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
   $items['api/crown'] = array(
     'title' => t('Ajax API crown'),
     'page callback' => '_crown_api',
@@ -76,6 +83,8 @@ function _user_login_api() {
  * test
  */
  function _test() {
+ 	_create_winning_record(7);exit;
+ 	var_dump(_input_validation_and_format(array('method' => 'POST', 'fields' => array('af' => 'notnull', 'dfa' => 'notnull'))));exit;
 	//_mother_list_api();
  	//_retrieve_store_lat_long();
  }
@@ -109,6 +118,42 @@ function _mother_list_api() {
 
 /**
  *
+ * Create mother type
+ *
+ * @param $mother_nid, $jewel_nid
+ * @return status
+ *
+ */
+function _mother_create_api() {
+
+	global $user;
+
+	$fields = array('mother_nid' => 'mother', 'jewel_nid' => 'jewel');
+	$input = array('method' => 'POST', 'fields' => $fields);
+	$data = _input_validation_and_format($input);
+
+	$bundle = 'chowssmsd_users_mother';
+
+	$condition = array(
+		'bundle' => $bundle,
+		'condition' => array(
+			'field_chowssmsd_user' => array('target_id' => $user->uid), 
+			),
+		);
+
+	$results = _node_query($condition);
+
+	if($results)
+		_print_status('012'); //you have already created a mother type
+
+	_create_mother_type($data->mother_nid, $data->jewel_nid);
+
+	print json_encode(array('status' => 1)); //success
+
+}
+
+/**
+ *
  * Crown API
  *
  * @return status
@@ -116,9 +161,12 @@ function _mother_list_api() {
  */
 function _crown_api() {
 
-	$fields = array('method' => 'GET');
+	global $user;
 
-	_input_validation_and_format($fields);
+	$fields = array('uid' => 'uid');
+	$input = array('method' => 'POST', 'fields' => $fields);
+	$data = _input_validation_and_format($input);
+	$recipient = $data->uid;
 
 	$bundle = 'chowssmsd_crown_record';
 
@@ -137,8 +185,10 @@ function _crown_api() {
 		$counts = _create_crown_record($recipient);	
 
 
-	if(count($counts)%2 == 0)
+	if(count($counts)%2 == 0) {
+		_create_winning_record($recipient);
 		_push_wechat_message($recipient);
+	}
 
 	print json_encode(array('status' => 1, 'counts' => $counts)); //success
 
@@ -219,6 +269,30 @@ function _push_wechat_message($recipient) {
 
 /**
  *
+ * Create mother type
+ *
+ * @param $mother_nid, $jewel_nid
+ */
+function _create_mother_type($mother_nid, $jewel_nid) {
+
+	global $user;
+
+	$node = new stdClass();
+	$bundle = 'chowssmsd_users_mother';
+	$node->type = $bundle;
+	node_object_prepare($node);
+	$node->language = LANGUAGE_NONE;
+	$node->status = 0;
+	$node->title = $mother_nid;
+	$node->field_chowssmsd_users_monther[LANGUAGE_NONE][0]['target_id'] = $mother_nid;
+	$node->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id'] = $jewel_nid;
+	$node->field_chowssmsd_user[LANGUAGE_NONE][0]['target_id'] = $user->uid;
+	node_save($node);
+
+}
+
+/**
+ *
  * Create crown record
  *
  * @return crown count
@@ -232,11 +306,12 @@ function _create_crown_record($recipient) {
 		_print_status('010'); //can not crown by yourself
 
 	$node = new stdClass();
-	node_object_prepare($node);
+	$bundle = 'chowssmsd_crown_record';
 	$node->type = $bundle;
+	node_object_prepare($node);
 	$node->language = LANGUAGE_NONE;
 	$node->status = 0;
-	$node->title = $recipient;
+	$node->title = t('加冕');
 	$node->field_chowssmsd_crown_recipient[LANGUAGE_NONE][0]['target_id'] = $recipient;
 	$node->field_chowssmsd_crown_part[LANGUAGE_NONE][0]['target_id'] = $user->uid;
 	node_save($node);
@@ -250,6 +325,60 @@ function _create_crown_record($recipient) {
 	$results = _node_query($condition);
 
 	return count($results);	
+
+}
+
+/**
+ *
+ * Create winning record
+ *
+ * @param $recipient
+ *
+ */
+function _create_winning_record($recipient) {
+
+	$user = user_load($recipient);
+
+	$node = new stdClass();
+	$bundle = 'chowssmsd_winning_record';
+	$node->type = $bundle;
+	node_object_prepare($node);
+	$node->language = LANGUAGE_NONE;
+	$node->status = 0;
+	$node->title = t('winning');
+	$node->field_chowssmsd_prize_winner[LANGUAGE_NONE][0]['target_id'] = $user->uid;
+
+	$store_nid = $user->field_user_nearnest_store[LANGUAGE_NONE][0]['target_id'];
+	$prize_tid = _get_prize_by_store_nid($store_nid);
+	$node->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'] = $prize_tid;
+
+	// $code = db_query('SELECT coupon_code FROM {cssmsd_coupon} WHERE status = :status AND type = :type ORDER BY rand() Limit 1', array(':status' => '0', 'type' => $prize_tid))->fetchField();
+	// $node->field_chowssmsd_prize_code[LANGUAGE_NONE][0]['value'] = $code;
+	
+	$node->field_chowssmsd_store_name[LANGUAGE_NONE][0]['target_id'] = $store_nid;
+	
+	node_save($node);
+
+	_update_the_coupon_repertory($node);
+
+}
+
+/**
+ *
+ * Update the coupon repertory
+ *
+ * @param node
+ *
+ */
+function _update_the_coupon_repertory($node) {
+
+	$code = $node->field_chowssmsd_prize_code[LANGUAGE_NONE][0]['value'];
+
+	db_update('cssmsd_coupon')
+			->fields(array(
+			  'status' => 1,
+			))
+			->condition('coupon_code', $code)->execute();
 
 }
 
@@ -315,24 +444,29 @@ function _node_query($condition) {
   * @return object
   *
   */
- function _input_validation_and_format($fields) {
+ function _input_validation_and_format($input) {
 
  	global $user;
 
  	if(!$user->uid)
  		_print_status('001'); //not login
 
- 	if(!isset($fields['method']) || !in_array($fields['method'], array('POST', 'GET')))
+ 	if(!isset($input['method']) || !in_array($input['method'], array('POST', 'GET')))
  		_print_status('002'); //The method must be set
 
- 	if($fields['method'] == 'POST' && $_SERVER['REQUEST_METHOD'] !== 'POST')
+ 	if($input['method'] == 'POST' && $_SERVER['REQUEST_METHOD'] !== 'POST')
  		_print_status('003'); //wrong request method
 
- 	if($fields['method'] == 'GET' && $_SERVER['REQUEST_METHOD'] !== 'GET')
+ 	if($input['method'] == 'GET' && $_SERVER['REQUEST_METHOD'] !== 'GET')
  		_print_status('003'); //wrong request method
 
- 	if($fields['method'] == 'POST') {
-	 	foreach($fields as $field => $type) {
+ 	$data = new stdClass();
+
+ 	if($input['method'] == 'POST') {
+	 	foreach($input['fields'] as $field => $type) {
+
+	 		if(!$_POST[$field])
+	 			return _print_status('004'); //param name is wrong
 
 	 		$value = $_POST[$field];
 
@@ -344,9 +478,31 @@ function _node_query($condition) {
 
 	        if($type == 'file' && !file_load($value))
 	          return _print_status('999'); //unknow error
+
+	        if($type == 'mother'){
+	        	$result = db_query('SELECT 1 FROM {node} WHERE nid = :nid AND type = :type', array(':nid' => $value, 'type' => 'chowssmsd_monther_type'))->fetchField();
+	        	if(!$result)
+	        		return _print_status('005'); //the mother nid is not exist
+	        }
+
+	        if($type == 'jewel'){
+	        	$result = db_query('SELECT 1 FROM {node} WHERE nid = :nid AND type = :type', array(':nid' => $value, 'type' => 'chowssmsd_jewel'))->fetchField();
+	        	if(!$result)
+	        		return _print_status('006'); //the jewel nid is not exist
+	        }
+
+	        if($type == 'uid'){
+	        	$result = db_query('SELECT 1 FROM {users} WHERE uid = :uid', array(':uid' => $value))->fetchField();	        
+	        	if(!$result)
+	        		return _print_status('007'); //the user is not exist
+
+	        }
+
+	      	$data->$field = $value;
 	 	}
  	}
 
+ 	return $data;
 
  }
 
@@ -366,13 +522,13 @@ function _node_query($condition) {
 
  /**
   *
-  * Get prize by nid
+  * Get prize by store nid
   *
   * @param $nid
   * @return term
   *
   */
- function _get_prize_by_nid($nid) {
+ function _get_prize_by_store_nid($nid) {
  	//get the entity prize tid
  	$item_ids = node_load($nid)->field_chowssmsd_store_prize[LANGUAGE_NONE];
  	$prizes = array();
@@ -388,7 +544,9 @@ function _node_query($condition) {
  	}
 
  	//get the coupon prize tid
-	$virtual_tid = array_shift(taxonomy_get_term_by_name('Virtual'))->tid;
+ 	$virtual_term = taxonomy_get_term_by_name('Virtual');
+	$virtual_tid = array_shift($virtual_term)->tid;
+
 	$virtual_prizes = taxonomy_get_children($virtual_tid);
 	
 	foreach($virtual_prizes as $prize) {
@@ -396,7 +554,7 @@ function _node_query($condition) {
 			$prizes[] = $prize->tid;
 	}
 
-	$probability = split('/', variable_get('cssmsd_api_prize_probability', NULL));
+	$probability = explode('/', variable_get('cssmsd_api_prize_probability', NULL));
 
 	//return the prize tid by probability
 	if(mt_rand(0, $probability[1]) <= $probability[0]) {
@@ -405,7 +563,8 @@ function _node_query($condition) {
 		return $prize_tid;
 	}
 
-	$prize_tid = array_shift(taxonomy_get_term_by_name('门店200元优惠券'))->tid;
+	$consolation_term = taxonomy_get_term_by_name('门店200元优惠券');
+	$prize_tid = array_shift($consolation_term)->tid;
 
 	return $prize_tid;
 
@@ -449,20 +608,8 @@ function _node_query($condition) {
   *
   */
  function _get_virtual_prize_quantity($tid) {
- 	return 100;
- }
- /**
-  *
-  * Create winning record
-  *
-  * @param 
-  * @return 
-  *
-  */
- function _create_winning_record() {
-
-	
-
+ 	$count = db_query('SELECT 1 FROM {cssmsd_coupon} WHERE status = :status AND type = :type', array(':status' => '0', 'type' => $tid))->rowCount();
+ 	return $count;
  }
 
  /**
