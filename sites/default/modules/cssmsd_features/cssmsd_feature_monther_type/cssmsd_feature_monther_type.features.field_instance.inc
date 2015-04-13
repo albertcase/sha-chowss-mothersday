@@ -185,7 +185,11 @@ function cssmsd_feature_monther_type_field_default_field_instances() {
   // Exported field_instance: 'node-chowssmsd_monther_type-field_chowssmsd_monther_weight'
   $field_instances['node-chowssmsd_monther_type-field_chowssmsd_monther_weight'] = array(
     'bundle' => 'chowssmsd_monther_type',
-    'default_value' => NULL,
+    'default_value' => array(
+      0 => array(
+        'value' => 0,
+      ),
+    ),
     'deleted' => 0,
     'description' => '',
     'display' => array(
