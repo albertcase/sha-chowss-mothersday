@@ -10,13 +10,13 @@
 function cssmsd_feature_user_winning_record_field_default_field_bases() {
   $field_bases = array();
 
-  // Exported field_base: 'field_chowssmsd_prize_code'
-  $field_bases['field_chowssmsd_prize_code'] = array(
+  // Exported field_base: 'field_chowssmsd_win_prize_code'
+  $field_bases['field_chowssmsd_win_prize_code'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
     'entity_types' => array(),
-    'field_name' => 'field_chowssmsd_prize_code',
+    'field_name' => 'field_chowssmsd_win_prize_code',
     'indexes' => array(
       'format' => array(
         0 => 'format',
@@ -31,13 +31,39 @@ function cssmsd_feature_user_winning_record_field_default_field_bases() {
     'type' => 'text',
   );
 
-  // Exported field_base: 'field_chowssmsd_prize_status'
-  $field_bases['field_chowssmsd_prize_status'] = array(
+  // Exported field_base: 'field_chowssmsd_win_prize_name'
+  $field_bases['field_chowssmsd_win_prize_name'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
     'entity_types' => array(),
-    'field_name' => 'field_chowssmsd_prize_status',
+    'field_name' => 'field_chowssmsd_win_prize_name',
+    'indexes' => array(
+      'tid' => array(
+        0 => 'tid',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'taxonomy',
+    'settings' => array(
+      'allowed_values' => array(
+        0 => array(
+          'vocabulary' => 'chowssmsd_prizes',
+          'parent' => 0,
+        ),
+      ),
+    ),
+    'translatable' => 0,
+    'type' => 'taxonomy_term_reference',
+  );
+
+  // Exported field_base: 'field_chowssmsd_win_prize_status'
+  $field_bases['field_chowssmsd_win_prize_status'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_chowssmsd_win_prize_status',
     'indexes' => array(
       'value' => array(
         0 => 'value',
@@ -56,13 +82,13 @@ function cssmsd_feature_user_winning_record_field_default_field_bases() {
     'type' => 'list_integer',
   );
 
-  // Exported field_base: 'field_chowssmsd_prize_winner'
-  $field_bases['field_chowssmsd_prize_winner'] = array(
+  // Exported field_base: 'field_chowssmsd_win_prize_winner'
+  $field_bases['field_chowssmsd_win_prize_winner'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
     'entity_types' => array(),
-    'field_name' => 'field_chowssmsd_prize_winner',
+    'field_name' => 'field_chowssmsd_win_prize_winner',
     'indexes' => array(
       'target_id' => array(
         0 => 'target_id',
@@ -89,13 +115,13 @@ function cssmsd_feature_user_winning_record_field_default_field_bases() {
     'type' => 'entityreference',
   );
 
-  // Exported field_base: 'field_chowssmsd_store_name'
-  $field_bases['field_chowssmsd_store_name'] = array(
+  // Exported field_base: 'field_chowssmsd_win_store_name'
+  $field_bases['field_chowssmsd_win_store_name'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
     'entity_types' => array(),
-    'field_name' => 'field_chowssmsd_store_name',
+    'field_name' => 'field_chowssmsd_win_store_name',
     'indexes' => array(
       'target_id' => array(
         0 => 'target_id',

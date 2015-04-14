@@ -1,7 +1,7 @@
 name = CSSMSD Stores
 core = 7.x
 package = CSSMSD
-version = 7.x-0.1
+version = 7.x-1.0
 project = cssmsd_feature_stores
 dependencies[] = date
 dependencies[] = features
