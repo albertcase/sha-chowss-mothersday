@@ -34,7 +34,7 @@ function cssmsd_feature_user_winning_record_field_default_field_bases() {
   // Exported field_base: 'field_chowssmsd_prize_status'
   $field_bases['field_chowssmsd_prize_status'] = array(
     'active' => 1,
-    'cardinality' => -1,
+    'cardinality' => 1,
     'deleted' => 0,
     'entity_types' => array(),
     'field_name' => 'field_chowssmsd_prize_status',
@@ -47,6 +47,7 @@ function cssmsd_feature_user_winning_record_field_default_field_bases() {
     'module' => 'list',
     'settings' => array(
       'allowed_values' => array(
+        0 => 'Not Excahnged',
         1 => 'Excahnged',
       ),
       'allowed_values_function' => '',
