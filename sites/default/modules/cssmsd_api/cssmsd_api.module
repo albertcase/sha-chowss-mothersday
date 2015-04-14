@@ -70,26 +70,30 @@ function cssmsd_api_menu() {
 /**
  *
  * User Login API
- *
+ * @param $openid
  *
  */
-function _user_login_api() {
+function _user_login_api($openid) {
 
 	global $user;
 
 	if(!$user->uid) {
 		$tracking_key = _tracking_key_generate();
-		$account = db_query('SELECT 1 FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
-		if(!$account) {
+		$uid = db_query('SELECT uid FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
+		if($uid) {
+			$user = user_load($uid);
+		} else {
 			// organize user data
 			$edit = array();
 			$edit['name'] = $tracking_key;
 			$edit['mail'] = $edit['init'] = $tracking_key . '@fake.com';
 			$edit['status'] = 1;
+			$edit['field_user_weixin_openid'][LANGUAGE_NONE][0]['value'] = $openid;
 			$edit['access'] = REQUEST_TIME;
 			$user = user_save(NULL, $edit);
-			user_login_finalize();  	
 		}
+		user_login_finalize();  
+
 	}
 }
 
