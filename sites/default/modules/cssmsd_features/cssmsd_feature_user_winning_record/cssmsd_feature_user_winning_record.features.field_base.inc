@@ -47,7 +47,7 @@ function cssmsd_feature_user_winning_record_field_default_field_bases() {
     'module' => 'list',
     'settings' => array(
       'allowed_values' => array(
-        1 => 'Used',
+        1 => 'Excahnged',
       ),
       'allowed_values_function' => '',
     ),
