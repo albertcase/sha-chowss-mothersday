@@ -219,9 +219,9 @@ function _prize_list_api() {
 	$condition = array(
 		'bundle' => 'chowssmsd_winning_record',
 		'condition' => array(
-			'field_chowssmsd_prize_winner' => array('target_id' => $user->uid), 
+			'field_chowssmsd_win_prize_winner' => array('target_id' => $user->uid), 
 			),
-		'orderby' => array('field_chowssmsd_prize_status', 'DESC'),
+		'orderby' => array('field_chowssmsd_win_prize_status', 'DESC'),
 		);
 	$results = _node_query($condition);
 
@@ -394,12 +394,12 @@ function _create_winning_record($recipient) {
 	$node->status = 0;
 	$node->uid = $user->uid;
 	$node->title = t('winning');
-	$node->field_chowssmsd_prize_winner[LANGUAGE_NONE][0]['target_id'] = $user->uid;
-	$node->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'] = $prize_tid;
-	$node->field_chowssmsd_prize_code[LANGUAGE_NONE][0]['value'] = _get_prize_code($prize_tid);
+	$node->field_chowssmsd_win_prize_winner[LANGUAGE_NONE][0]['target_id'] = $user->uid;
+	$node->field_chowssmsd_win_prize_name[LANGUAGE_NONE][0]['tid'] = $prize_tid;
+	$node->field_chowssmsd_win_prize_code[LANGUAGE_NONE][0]['value'] = _get_prize_code($prize_tid);
 
 	if(_is_instore_prize($prize_tid))
-		$node->field_chowssmsd_store_name[LANGUAGE_NONE][0]['target_id'] = $store_nid;
+		$node->field_chowssmsd_win_store_name[LANGUAGE_NONE][0]['target_id'] = $store_nid;
 	
 	node_save($node);
 
@@ -473,11 +473,11 @@ function _prize_output_list_format($nid) {
 
 	$list = new stdClass();
 	$node = node_load($nid);
-	$prize_tid = $node->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'];
-	$prize_code = $node->field_chowssmsd_prize_code[LANGUAGE_NONE][0]['value'];
+	$prize_tid = $node->field_chowssmsd_win_prize_name[LANGUAGE_NONE][0]['tid'];
+	$prize_code = $node->field_chowssmsd_win_prize_code[LANGUAGE_NONE][0]['value'];
 
 	$list->name = taxonomy_term_load($prize_tid)->name;
-	$list->exchanged = $node->field_chowssmsd_prize_status[LANGUAGE_NONE][0]['value'];
+	$list->exchanged = $node->field_chowssmsd_win_prize_status[LANGUAGE_NONE][0]['value'];
 	$list->data = _prize_data_format($prize_tid, $prize_code);
 
 	return $list;
@@ -756,8 +756,8 @@ function _node_query($condition) {
  	$condition = array(
 		'bundle' => 'chowssmsd_winning_record',
 		'condition' => array(
-			'field_chowssmsd_store_name' => array('target_id' => $store_nid), 
-			'field_chowssmsd_prize_name' => array('tid' => $tid), 
+			'field_chowssmsd_win_store_name' => array('target_id' => $store_nid), 
+			'field_chowssmsd_win_prize_name' => array('tid' => $tid), 
 			),
 		);
 	$results = _node_query($condition);
