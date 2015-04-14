@@ -90,7 +90,11 @@ function cssmsd_feature_user_winning_record_field_default_field_instances() {
   // Exported field_instance: 'node-chowssmsd_winning_record-field_chowssmsd_prize_status'
   $field_instances['node-chowssmsd_winning_record-field_chowssmsd_prize_status'] = array(
     'bundle' => 'chowssmsd_winning_record',
-    'default_value' => NULL,
+    'default_value' => array(
+      0 => array(
+        'value' => 0,
+      ),
+    ),
     'deleted' => 0,
     'description' => '',
     'display' => array(
@@ -119,7 +123,7 @@ function cssmsd_feature_user_winning_record_field_default_field_instances() {
       'active' => 1,
       'module' => 'options',
       'settings' => array(),
-      'type' => 'options_buttons',
+      'type' => 'options_select',
       'weight' => 36,
     ),
   );
@@ -193,18 +197,14 @@ function cssmsd_feature_user_winning_record_field_default_field_instances() {
     'entity_type' => 'node',
     'field_name' => 'field_chowssmsd_store_name',
     'label' => 'Store Name',
-    'required' => 1,
+    'required' => 0,
     'settings' => array(
       'user_register_form' => FALSE,
     ),
     'widget' => array(
       'active' => 1,
       'module' => 'options',
-      'settings' => array(
-        'match_operator' => 'CONTAINS',
-        'path' => '',
-        'size' => 60,
-      ),
+      'settings' => array(),
       'type' => 'options_select',
       'weight' => 35,
     ),

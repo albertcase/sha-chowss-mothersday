@@ -64,37 +64,36 @@ function cssmsd_api_menu() {
  * test
  */
  function _test() {
- 	_prize_output_format(99);exit;
-//var_dump(_get_prize_used_quantity(1, 1));exit;
- 	_create_winning_record(7);exit;
- 	var_dump(_input_validation_and_format(array('method' => 'POST', 'fields' => array('af' => 'notnull', 'dfa' => 'notnull'))));exit;
-	//_mother_list_api();
- 	//_retrieve_store_lat_long();
+
  }
 
 /**
  *
  * User Login API
- *
+ * @param $openid
  *
  */
-function _user_login_api() {
+function _user_login_api($openid) {
 
 	global $user;
 
 	if(!$user->uid) {
 		$tracking_key = _tracking_key_generate();
-		$account = db_query('SELECT 1 FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
-		if(!$account) {
+		$uid = db_query('SELECT uid FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
+		if($uid) {
+			$user = user_load($uid);
+		} else {
 			// organize user data
 			$edit = array();
 			$edit['name'] = $tracking_key;
 			$edit['mail'] = $edit['init'] = $tracking_key . '@fake.com';
 			$edit['status'] = 1;
+			$edit['field_user_weixin_openid'][LANGUAGE_NONE][0]['value'] = $openid;
 			$edit['access'] = REQUEST_TIME;
 			$user = user_save(NULL, $edit);
-			user_login_finalize();  	
 		}
+		user_login_finalize();  
+
 	}
 }
 
@@ -210,8 +209,30 @@ function _crown_api() {
  * @param nid
  *
  */
-function _prize_list_api($nid) {
-//_prize_output_format($tid);
+function _prize_list_api() {
+
+	global $user;
+
+ 	if(!$user->uid)
+ 		_print_status('001'); //user not login
+
+	$condition = array(
+		'bundle' => 'chowssmsd_winning_record',
+		'condition' => array(
+			'field_chowssmsd_prize_winner' => array('target_id' => $user->uid), 
+			),
+		'orderby' => array('field_chowssmsd_prize_status', 'DESC'),
+		);
+	$results = _node_query($condition);
+
+	$list = array();
+
+	foreach($results as $nid) {
+		$list[] = _prize_output_list_format($nid);
+	}
+ 	
+ 	print json_encode(array('status' => 1, 'data' => $list));
+
 }
 
 /**
@@ -359,22 +380,54 @@ function _create_winning_record($recipient) {
 
 	$user = user_load($recipient);
 
+	if($user->field_user_nearnest_store)
+		$store_nid = $user->field_user_nearnest_store[LANGUAGE_NONE][0]['target_id'];
+	else
+		$store_nid = '';
+	$prize_tid = _get_prize_by_store_nid($store_nid);
+
 	$node = new stdClass();
 	$bundle = 'chowssmsd_winning_record';
 	$node->type = $bundle;
 	node_object_prepare($node);
 	$node->language = LANGUAGE_NONE;
 	$node->status = 0;
+	$node->uid = $user->uid;
 	$node->title = t('winning');
 	$node->field_chowssmsd_prize_winner[LANGUAGE_NONE][0]['target_id'] = $user->uid;
-
-	$store_nid = $user->field_user_nearnest_store[LANGUAGE_NONE][0]['target_id'];
-	$prize_tid = _get_prize_by_store_nid($store_nid);
 	$node->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'] = $prize_tid;
 	$node->field_chowssmsd_prize_code[LANGUAGE_NONE][0]['value'] = _get_prize_code($prize_tid);
-	$node->field_chowssmsd_store_name[LANGUAGE_NONE][0]['target_id'] = $store_nid;
+
+	if(_is_instore_prize($prize_tid))
+		$node->field_chowssmsd_store_name[LANGUAGE_NONE][0]['target_id'] = $store_nid;
 	
 	node_save($node);
+
+}
+
+
+
+
+/**
+ *
+ * Check is instore prize  
+ *
+ * @param tid
+ *
+ */
+function _is_instore_prize($tid) {
+
+ 	$term = taxonomy_get_term_by_name('InStore');
+	$tid = array_shift($virtual_term)->tid;
+
+	$virtual_prizes = taxonomy_get_children($virtual_tid);
+	
+	foreach($virtual_prizes as $prize) {
+		if($prize->tid == $tid)
+			return TRUE;
+	}
+
+	return FALSE;
 
 }
 
@@ -413,24 +466,71 @@ function _get_prize_code($tid) {
  *
  * Prize output format
  *
+ * @param nid
+ *
+ */
+function _prize_output_list_format($nid) {
+
+	$list = new stdClass();
+	$node = node_load($nid);
+	$prize_tid = $node->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'];
+	$prize_code = $node->field_chowssmsd_prize_code[LANGUAGE_NONE][0]['value'];
+
+	$list->name = taxonomy_term_load($prize_tid)->name;
+	$list->exchanged = $node->field_chowssmsd_prize_status[LANGUAGE_NONE][0]['value'];
+	$list->data = _prize_data_format($prize_tid, $prize_code);
+
+	return $list;
+
+}
+
+/**
+ *
+ * Prize data format
+ *
  * @param tid
  *
  */
-function _prize_output_format($tid) {
+function _prize_data_format($tid, $prize_code) {
 
-	$term = taxonomy_term_load($prize_tid);
-	$type = taxonomy_term_load($term->field_chowssmsd_prize_type[LANGUAGE_NONE][0]['tid'])->name;
+	global $user;
 
-	// if($term->name == '门店200元优惠券')
-	// 	return substr(uuid_generate(), 0, 8);
+	$prize = new stdClass();
+	$term = taxonomy_term_load($tid);
+	$info = array();
+	$rule = array();
 
-	// if($type == 'Coupon'){
-		
-	// }
+ 	$coupon_term = taxonomy_get_term_by_name('Coupon');
+	$coupon_tid = array_shift($virtual_term)->tid;
+	if($term->field_chowssmsd_prize_type[LANGUAGE_NONE][0]['target_id'] == $coupon_tid)
+		$info[] = array('field' => '代码', 'value' => $prize_code);
 
-	// return $term->name;
+	if($term->field_chowssmsd_use_scope)
+		$info[] = array('field' => '使用范围', 'value' => $term->field_chowssmsd_use_scope[LANGUAGE_NONE][0]['value']);
+
+	if($term->field_chowssmsd_use_date){
+		$start = date('Y.m.d', strtotime($term->field_chowssmsd_use_date[LANGUAGE_NONE][0]['value']));
+		$end = date('Y.m.d', strtotime($term->field_chowssmsd_use_date[LANGUAGE_NONE][0]['value2']));
+		$info[] = array('field' => '使用有效期', 'value' => $start . '-' . $end);
+	}
+
+	if($user)
+		$info[] = array('field' => '您的手机', 'value' => '3242432');
+
+	if($term->field_chowssmsd_exchange_date){
+		$start = date('Y.m.d', strtotime($term->field_chowssmsd_exchange_date[LANGUAGE_NONE][0]['value']));
+		$end = date('Y.m.d', strtotime($term->field_chowssmsd_exchange_date[LANGUAGE_NONE][0]['value2']));
+		$rule[] = array('field' => '兑换有效期', 'value' => $start . '-' . $end);
+	}
+
+	$data = new stdClass();
+	$data->info = $info;
+	$data->rule = $rule;
+
+	return $data;
 
 }
+
 
 /**
  *
@@ -581,19 +681,23 @@ function _node_query($condition) {
   * @return term
   *
   */
- function _get_prize_by_store_nid($nid) {
- 	//get the entity prize tid
- 	$item_ids = node_load($nid)->field_chowssmsd_store_prize[LANGUAGE_NONE];
+ function _get_prize_by_store_nid($nid = '') {
+
  	$prizes = array();
- 	
- 	foreach($item_ids as $item_id) {
- 		$item = field_collection_item_load($item_id['value']);
- 		$tid = $item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'];
- 		$quantity = $item->field_chowssmsd_prize_quantity[LANGUAGE_NONE][0]['value'];
- 		$used = _get_prize_used_quantity($nid, $tid);
- 		if($used < $quantity) {
- 			$prizes[] = $tid;
- 		}
+
+ 	if($nid){
+	 	//get the entity prize tid
+	 	$item_ids = node_load($nid)->field_chowssmsd_store_prize[LANGUAGE_NONE];
+
+	 	foreach($item_ids as $item_id) {
+	 		$item = field_collection_item_load($item_id['value']);
+	 		$tid = $item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'];
+	 		$quantity = $item->field_chowssmsd_prize_quantity[LANGUAGE_NONE][0]['value'];
+	 		$used = _get_prize_used_quantity($nid, $tid);
+	 		if($used < $quantity) {
+	 			$prizes[] = $tid;
+	 		}
+	 	}
  	}
 
  	//get the coupon prize tid
