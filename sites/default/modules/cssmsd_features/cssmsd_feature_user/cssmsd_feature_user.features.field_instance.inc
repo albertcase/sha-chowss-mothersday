@@ -10,6 +10,40 @@
 function cssmsd_feature_user_field_default_field_instances() {
   $field_instances = array();
 
+  // Exported field_instance: 'user-user-field_user_cellphone'
+  $field_instances['user-user-field_user_cellphone'] = array(
+    'bundle' => 'user',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'text',
+        'settings' => array(),
+        'type' => 'text_default',
+        'weight' => 6,
+      ),
+    ),
+    'entity_type' => 'user',
+    'field_name' => 'field_user_cellphone',
+    'label' => 'CellPhone',
+    'required' => 0,
+    'settings' => array(
+      'text_processing' => 0,
+      'user_register_form' => 0,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'text',
+      'settings' => array(
+        'size' => 60,
+      ),
+      'type' => 'text_textfield',
+      'weight' => 13,
+    ),
+  );
+
   // Exported field_instance: 'user-user-field_user_latitude'
   $field_instances['user-user-field_user_latitude'] = array(
     'bundle' => 'user',
@@ -117,6 +151,7 @@ function cssmsd_feature_user_field_default_field_instances() {
 
   // Translatables
   // Included for use with string extractors like potx.
+  t('CellPhone');
   t('Latitude');
   t('Longitude');
   t('Nearnest Store');
