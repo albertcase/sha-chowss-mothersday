@@ -6,9 +6,9 @@
 function cssmsd_api_menu() {
   $items = array();
 
-  $items['api/user_login'] = array(
-    'title' => t('Ajax API user login'),
-    'page callback' => '_user_login_api',
+  $items['api/lbs_update'] = array(
+    'title' => t('Ajax API LBS info update'),
+    'page callback' => '_lbs_update_api',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
   );
@@ -41,6 +41,20 @@ function cssmsd_api_menu() {
     'access callback' => TRUE,
   );
 
+  $items['api/cellphone'] = array(
+    'title' => t('Ajax API Prize List'),
+    'page callback' => '_cellphone_input_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
+  $items['api/pize_exchange'] = array(
+    'title' => t('Ajax API Prize List'),
+    'page callback' => '_pize_exchange_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
   $items['admin/config/cssmsd/prize'] = array(
     'title' => 'CSSMSD Lucky Set',
     'description' => 'Configure required settings for Lucky',
@@ -69,31 +83,25 @@ function cssmsd_api_menu() {
 
 /**
  *
- * User Login API
- * @param $openid
+ * LBS update API
+ * @param $latitude, $longitude
  *
  */
-function _user_login_api($openid) {
+function _lbs_update_api() {
 
-	global $user;
+	$fields = array('latitude' => 'notnull', 'longitude' => 'notnull');
+	$input = array('method' => 'POST', 'fields' => $fields);
+	$data = _input_validation_and_format($input);
 
-	if(!$user->uid) {
-		$tracking_key = _tracking_key_generate();
-		$uid = db_query('SELECT uid FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
-		if($uid) {
-			$user = user_load($uid);
-		} else {
-			// organize user data
-			$edit = array();
-			$edit['name'] = $tracking_key;
-			$edit['mail'] = $edit['init'] = $tracking_key . '@fake.com';
-			$edit['status'] = 1;
-			$edit['field_user_weixin_openid'][LANGUAGE_NONE][0]['value'] = $openid;
-			$edit['access'] = REQUEST_TIME;
-			$user = user_save(NULL, $edit);
-		}
-		user_login_finalize();  
+	$user = user_load($data->uid);
+	$latitude = $user->field_user_latitude[LANGUAGE_NONE][0]['value'];
+	$longitude = $user->field_user_longitude[LANGUAGE_NONE][0]['value'];
 
+	if(!$latitude || !$longitude){
+		$user->field_user_latitude[LANGUAGE_NONE][0]['value'] = $data->latitude;
+		$user->field_user_longitude[LANGUAGE_NONE][0]['value'] = $data->longitude;
+		$user->field_user_nearnest_store[LANGUAGE_NONE][0]['target_id'] = _get_nearest_store($data->latitude, $data->longitude);
+		user_save($user);
 	}
 }
 
@@ -233,6 +241,46 @@ function _prize_list_api() {
  	
  	print json_encode(array('status' => 1, 'data' => $list));
 
+}
+
+/**
+ *
+ * input cellphone
+ * @param $cellphone
+ *
+ */
+function _cellphone_input_api() {
+
+	$fields = array('cellphone' => 'notnull');
+	$input = array('method' => 'POST', 'fields' => $fields);
+	$data = _input_validation_and_format($input);
+
+	$user = user_load($data->uid);
+	$user->field_user_cellphone[LANGUAGE_NONE][0]['value'] = $data->cellphone;
+	user_save($user);
+	print json_encode(array('status' => 1));
+}
+
+/**
+ *
+ * Pize exchange api
+ * @param $nid, $access
+ *
+ */
+function _pize_exchange_api() {
+
+	$fields = array('nid' => 'notnull', 'access' => 'notnull');
+	$input = array('method' => 'POST', 'fields' => $fields);
+	$data = _input_validation_and_format($input);
+
+	if($data->access == variable_get('cssmsd_api_prize_access_code', NULL)) {
+		$node = node_load($data->nid);
+		$node->field_chowssmsd_win_prize_status[LANGUAGE_NONE][0]['value'] = 1;
+		node_save($node);
+		print json_encode(array('status' => 1));
+	}
+
+	print json_encode(array('status' => '020')); //access code is wrong
 }
 
 /**
@@ -476,9 +524,10 @@ function _prize_output_list_format($nid) {
 	$prize_tid = $node->field_chowssmsd_win_prize_name[LANGUAGE_NONE][0]['tid'];
 	$prize_code = $node->field_chowssmsd_win_prize_code[LANGUAGE_NONE][0]['value'];
 
+	$list->prize_nid = $nid;
 	$list->name = taxonomy_term_load($prize_tid)->name;
 	$list->exchanged = $node->field_chowssmsd_win_prize_status[LANGUAGE_NONE][0]['value'];
-	$list->data = _prize_data_format($prize_tid, $prize_code);
+	$list->data = _prize_data_format($prize_tid, $prize_code, $list->exchanged);
 
 	return $list;
 
@@ -488,10 +537,10 @@ function _prize_output_list_format($nid) {
  *
  * Prize data format
  *
- * @param tid
+ * @param tid, $prize_code, $status
  *
  */
-function _prize_data_format($tid, $prize_code) {
+function _prize_data_format($tid, $prize_code, $status) {
 
 	global $user;
 
@@ -502,8 +551,10 @@ function _prize_data_format($tid, $prize_code) {
 
  	$coupon_term = taxonomy_get_term_by_name('Coupon');
 	$coupon_tid = array_shift($virtual_term)->tid;
-	if($term->field_chowssmsd_prize_type[LANGUAGE_NONE][0]['target_id'] == $coupon_tid)
+	if($term->field_chowssmsd_prize_type[LANGUAGE_NONE][0]['target_id'] == $coupon_tid){
 		$info[] = array('field' => '代码', 'value' => $prize_code);
+		$data->exchange = $status ? 1 : 0;
+	}
 
 	if($term->field_chowssmsd_use_scope)
 		$info[] = array('field' => '使用范围', 'value' => $term->field_chowssmsd_use_scope[LANGUAGE_NONE][0]['value']);
@@ -514,14 +565,15 @@ function _prize_data_format($tid, $prize_code) {
 		$info[] = array('field' => '使用有效期', 'value' => $start . '-' . $end);
 	}
 
-	if($user)
-		$info[] = array('field' => '您的手机', 'value' => '3242432');
+	if($user->field_user_cellphone)
+		$info[] = array('field' => '您的手机', 'value' => $user->field_user_cellphone[LANGUAGE_NONE][0]['value']);
 
 	if($term->field_chowssmsd_exchange_date){
 		$start = date('Y.m.d', strtotime($term->field_chowssmsd_exchange_date[LANGUAGE_NONE][0]['value']));
 		$end = date('Y.m.d', strtotime($term->field_chowssmsd_exchange_date[LANGUAGE_NONE][0]['value2']));
 		$rule[] = array('field' => '兑换有效期', 'value' => $start . '-' . $end);
 	}
+
 
 	$data = new stdClass();
 	$data->info = $info;
@@ -530,7 +582,6 @@ function _prize_data_format($tid, $prize_code) {
 	return $data;
 
 }
-
 
 /**
  *
@@ -614,6 +665,7 @@ function _node_query($condition) {
  		_print_status('003'); //wrong request method
 
  	$data = new stdClass();
+ 	$data->uid = $user->uid;
 
  	if($input['method'] == 'POST') {
 	 	foreach($input['fields'] as $field => $type) {
@@ -729,23 +781,6 @@ function _node_query($condition) {
 
  /**
   *
-  * Check prize by LBS
-  *
-  * @param latitude, $longitude
-  * @return code
-  *
-  */
- function _show_prize_by_lbs() {
- 	$latitude = $_POST['data']['latitude'];
- 	$longitude = $_POST['data']['longitude'];
-	$node = _get_nearest_store($latitude, $longitude);
-
-	
-
- }
-
- /**
-  *
   * Get prize number which has been used
   *
   * @param $store_nid, $tid
@@ -816,6 +851,36 @@ function _get_distance_between_points($latitude1, $longitude1, $latitude2, $long
     $miles = $miles * 60 * 1.1515;
     $meters = $kilometers * 1000;
     return $meters;
+}
+
+/**
+ *
+ * User Login
+ * @param $openid
+ *
+ */
+function _user_login($openid) {
+
+	global $user;
+
+	if(!$user->uid) {
+		$tracking_key = _tracking_key_generate();
+		$uid = db_query('SELECT uid FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
+		if($uid) {
+			$user = user_load($uid);
+		} else {
+			// organize user data
+			$edit = array();
+			$edit['name'] = $tracking_key;
+			$edit['mail'] = $edit['init'] = $tracking_key . '@fake.com';
+			$edit['status'] = 1;
+			$edit['field_user_weixin_openid'][LANGUAGE_NONE][0]['value'] = $openid;
+			$edit['access'] = REQUEST_TIME;
+			$user = user_save(NULL, $edit);
+		}
+		user_login_finalize();  
+
+	}
 }
 
  /**
