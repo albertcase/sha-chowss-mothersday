@@ -78,6 +78,7 @@ function cssmsd_api_menu() {
  * test
  */
  function _test() {
+
 _get_nearest_store('31.2013176089', '121.4341129009');exit;
  }
 
@@ -94,17 +95,13 @@ function _lbs_update_api() {
 	$data = _input_validation_and_format($input);
 
 	$user = user_load($data->uid);
-	if(isset($user->field_user_latitude) && isset($user->field_user_longitude)) {
-		$latitude = $user->field_user_latitude[LANGUAGE_NONE][0]['value'];
-		$longitude = $user->field_user_longitude[LANGUAGE_NONE][0]['value'];		
-	}
-
-	if(!$latitude || !$longitude){
+	if(!$user->field_user_latitude || !$user->field_user_longitude) {
 		$user->field_user_latitude[LANGUAGE_NONE][0]['value'] = $data->latitude;
 		$user->field_user_longitude[LANGUAGE_NONE][0]['value'] = $data->longitude;
 		$user->field_user_nearnest_store[LANGUAGE_NONE][0]['target_id'] = _get_nearest_store($data->latitude, $data->longitude);
-		user_save($user);
+		user_save($user);		
 	}
+	
 }
 
 /**
