@@ -21,7 +21,7 @@ function cssmsd_api_menu() {
   );
 
   $items['api/mother_create'] = array(
-    'title' => t('Ajax API crown'),
+    'title' => t('Ajax API create mother'),
     'page callback' => '_mother_create_api',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
@@ -101,7 +101,7 @@ function _lbs_update_api() {
 		$user->field_user_nearnest_store[LANGUAGE_NONE][0]['target_id'] = _get_nearest_store($data->latitude, $data->longitude);
 		user_save($user);		
 	}
-	
+
 }
 
 /**
