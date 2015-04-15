@@ -157,36 +157,6 @@ function _mother_show_api() {
 
 /**
  *
- * Show mother page data format
- * 
- * @param $user_mother_id
- *
- */
-function _mother_show_format($user_mother_id){
-
-	$user_mother = node_load($user_mother_id);
-	$mother_type = node_load($user_mother->field_chowssmsd_users_monther[LANGUAGE_NONE][0]['target_id']);
-	$jewel = node_load($user_mother->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id']);
-
-	$mother = new stdClass(); 
-	$mother_info = new stdClass();
-	$mother_jewel = new stdClass();
-
-	$mother_info->name = $mother_type->title;
-	$mother_info->description = $mother_type->body[LANGUAGE_NONE][0]['value'];
-	$mother_info->pic_thumbnail = image_style_url('cssmsd_mother_pic_s', $mother_type->field_chowssmsd_monther_pic[LANGUAGE_NONE][0]['uri']);
-
-	$mother_jewel->name = $mother_jewel->title;
-	$mother_jewel->pic_thumbnail = image_style_url('cssmsd_jewel_pic_thumb', $jewel->field_chowssmsd_jewel_pic[LANGUAGE_NONE][0]['uri']);
-
-	$mother->mother_info = $mother_info;
-	$mother->mother_jewel = $mother_jewel;
-
-	return $mother;
-}
-
-/**
- *
  * LBS update API
  * @param $latitude, $longitude
  *
@@ -389,6 +359,36 @@ function _pize_exchange_api() {
 	}
 
 	print json_encode(array('status' => '020')); //access code is wrong
+}
+
+/**
+ *
+ * Show mother page data format
+ * 
+ * @param $user_mother_id
+ *
+ */
+function _mother_show_format($user_mother_id){
+
+	$user_mother = node_load($user_mother_id);
+	$mother_type = node_load($user_mother->field_chowssmsd_users_monther[LANGUAGE_NONE][0]['target_id']);
+	$jewel = node_load($user_mother->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id']);
+
+	$mother = new stdClass(); 
+	$mother_info = new stdClass();
+	$mother_jewel = new stdClass();
+
+	$mother_info->name = $mother_type->title;
+	$mother_info->description = $mother_type->body[LANGUAGE_NONE][0]['value'];
+	$mother_info->pic_thumbnail = image_style_url('cssmsd_mother_pic_s', $mother_type->field_chowssmsd_monther_pic[LANGUAGE_NONE][0]['uri']);
+
+	$mother_jewel->name = $mother_jewel->title;
+	$mother_jewel->pic_thumbnail = image_style_url('cssmsd_jewel_pic_thumb', $jewel->field_chowssmsd_jewel_pic[LANGUAGE_NONE][0]['uri']);
+
+	$mother->mother_info = $mother_info;
+	$mother->mother_jewel = $mother_jewel;
+
+	return $mother;
 }
 
 /**
