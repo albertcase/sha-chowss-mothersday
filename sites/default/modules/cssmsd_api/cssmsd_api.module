@@ -21,7 +21,7 @@ function cssmsd_api_menu() {
   );
 
   $items['api/mother_create'] = array(
-    'title' => t('Ajax API create mother'),
+    'title' => t('Ajax API create'),
     'page callback' => '_mother_create_api',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
@@ -158,9 +158,12 @@ function _mother_create_api() {
 
 	$results = _node_query($condition);
 
-	if($results)
-		_print_status('012'); //you have already created a mother type
-
+	if($results) {
+		$user_mother_nid = array_shift($results);
+		_update_mother_type($user_mother_nid, $data);
+		//_print_status('012'); //you have already created a mother type
+	}
+	
 	_create_mother_type($data->mother_nid, $data->jewel_nid);
 
 	print json_encode(array('status' => 1)); //success
@@ -170,7 +173,8 @@ function _mother_create_api() {
 /**
  *
  * Crown API
- *
+ * 
+ * @param recipient
  * @return status
  *
  */
@@ -178,7 +182,7 @@ function _crown_api() {
 
 	global $user;
 
-	$fields = array('uid' => 'uid');
+	$fields = array('recipient' => 'uid');
 	$input = array('method' => 'POST', 'fields' => $fields);
 	$data = _input_validation_and_format($input);
 	$recipient = $data->uid;
@@ -232,13 +236,15 @@ function _prize_list_api() {
 		);
 	$results = _node_query($condition);
 
-	$list = array();
-
-	foreach($results as $nid) {
-		$list[] = _prize_output_list_format($nid);
+	if($results){
+		$list = array();
+		foreach($results as $nid) {
+			$list[] = _prize_output_list_format($nid);
+		}		
+		print json_encode(array('status' => 1, 'data' => $list));
+	} else {
+		_print_status('020'); //user have not win the prize
 	}
- 	
- 	print json_encode(array('status' => 1, 'data' => $list));
 
 }
 
@@ -376,6 +382,45 @@ function _create_mother_type($mother_nid, $jewel_nid) {
 	$node->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id'] = $jewel_nid;
 	$node->field_chowssmsd_user[LANGUAGE_NONE][0]['target_id'] = $user->uid;
 	node_save($node);
+
+}
+
+/**
+ *
+ * Update mother type
+ *
+ * @param $mother_nid
+ */
+function _update_mother_type($user_mother_nid, $data) {
+
+	$node = node_load($mother_nid);
+	$node->field_chowssmsd_users_monther[LANGUAGE_NONE][0]['target_id'] = $data->mother_nid;
+	$node->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id'] = $$data->jewel_nid;
+	node_save($node);
+
+}
+
+/**
+ *
+ * Check is Create mother type
+ *
+ * @param $uid
+ * @return bool
+ */
+function _is_create_mother($uid) {
+
+	$bundle = 'chowssmsd_users_mother';
+
+	$condition = array(
+		'bundle' => $bundle,
+		'condition' => array(
+			'field_chowssmsd_user' => array('target_id' => $uid), 
+			),
+		);
+	$results = _node_query($condition);
+	if($results)
+		return TRUE;
+	return FALSE;
 
 }
 
