@@ -6,9 +6,9 @@
 function cssmsd_api_menu() {
   $items = array();
 
-  $items['api/user_login'] = array(
-    'title' => t('Ajax API user login'),
-    'page callback' => '_user_login_api',
+  $items['api/lbs_update'] = array(
+    'title' => t('Ajax API LBS info update'),
+    'page callback' => '_lbs_update_api',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
   );
@@ -21,7 +21,7 @@ function cssmsd_api_menu() {
   );
 
   $items['api/mother_create'] = array(
-    'title' => t('Ajax API crown'),
+    'title' => t('Ajax API create'),
     'page callback' => '_mother_create_api',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
@@ -37,6 +37,27 @@ function cssmsd_api_menu() {
   $items['api/prize_list'] = array(
     'title' => t('Ajax API Prize List'),
     'page callback' => '_prize_list_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
+  $items['api/cellphone'] = array(
+    'title' => t('Ajax API Prize List'),
+    'page callback' => '_cellphone_input_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
+  $items['api/pize_exchange'] = array(
+    'title' => t('Ajax API Prize List'),
+    'page callback' => '_pize_exchange_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
+  $items['api/mother_show'] = array(
+    'title' => t('Ajax API Prize List'),
+    'page callback' => '_mother_show_api',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
   );
@@ -64,38 +85,96 @@ function cssmsd_api_menu() {
  * test
  */
  function _test() {
- 	_prize_output_format(99);exit;
-//var_dump(_get_prize_used_quantity(1, 1));exit;
- 	_create_winning_record(7);exit;
- 	var_dump(_input_validation_and_format(array('method' => 'POST', 'fields' => array('af' => 'notnull', 'dfa' => 'notnull'))));exit;
-	//_mother_list_api();
- 	//_retrieve_store_lat_long();
+
+_get_nearest_store('31.2013176089', '121.4341129009');exit;
  }
+
 
 /**
  *
- * User Login API
- *
+ * Show user`s mother API
+ * 
+ * @param $uid/null
  *
  */
-function _user_login_api() {
+function _mother_show_api() {
 
 	global $user;
 
-	if(!$user->uid) {
-		$tracking_key = _tracking_key_generate();
-		$account = db_query('SELECT 1 FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
-		if(!$account) {
-			// organize user data
-			$edit = array();
-			$edit['name'] = $tracking_key;
-			$edit['mail'] = $edit['init'] = $tracking_key . '@fake.com';
-			$edit['status'] = 1;
-			$edit['access'] = REQUEST_TIME;
-			$user = user_save(NULL, $edit);
-			user_login_finalize();  	
-		}
+ 	if(!$user->uid)
+ 		_print_status('001'); //user not login
+
+ 	$uid = isset($_POST['uid']) ? $_POST['uid'] : $user->uid;
+
+	$bundle = 'chowssmsd_users_mother';
+
+	$condition = array(
+		'bundle' => $bundle,
+		'condition' => array(
+			'field_chowssmsd_user' => array('target_id' => $uid), 
+			),
+		);
+
+	$results = _node_query($condition);
+
+	if(!$results) 
+		_print_status('021'); //user have not created mother yet
+
+	$user_mother_nid = array_shift($results);
+
+	$user_mother_data = _mother_show_format($user_mother_id);
+
+	$condition = array(
+		'bundle' => 'chowssmsd_crown_record',
+		'condition' => array(
+			'field_chowssmsd_crown_recipient' => array('target_id' => $uid), 
+			),
+		);
+	$results = _node_query($condition);
+	$crown_count = count($results);
+
+	if(isset($_POST['uid'])){
+		$condition = array(
+			'bundle' => 'chowssmsd_winning_record',
+			'condition' => array(
+				'field_chowssmsd_win_prize_winner' => array('target_id' => $uid), 
+				),
+			);
+		$results = _node_query($condition);	
+		$prize_count = count($results);
+		$user_mother_footer = array('type' => 'other', 'crown_count' => $crown_count, 'prize_count' => $prize_count);
+	} else {
+		$user_mother_footer = array('type' => 'me', 'crown_count' => $crown_count);
 	}
+
+	$user_mother = new stdClass();
+	$user_mother->user_mother_data = $user_mother_data;
+	$user_mother->user_mother_footer = $user_mother_footer;
+
+	print json_encode(array('status' => 1, 'data' => $user_mother)); //success
+
+}
+
+/**
+ *
+ * LBS update API
+ * @param $latitude, $longitude
+ *
+ */
+function _lbs_update_api() {
+
+	$fields = array('latitude' => 'notnull', 'longitude' => 'notnull');
+	$input = array('method' => 'POST', 'fields' => $fields);
+	$data = _input_validation_and_format($input);
+
+	$user = user_load($data->uid);
+	if(!$user->field_user_latitude || !$user->field_user_longitude) {
+		$user->field_user_latitude[LANGUAGE_NONE][0]['value'] = $data->latitude;
+		$user->field_user_longitude[LANGUAGE_NONE][0]['value'] = $data->longitude;
+		$user->field_user_nearnest_store[LANGUAGE_NONE][0]['target_id'] = _get_nearest_store($data->latitude, $data->longitude);
+		user_save($user);		
+	}
+
 }
 
 /**
@@ -152,10 +231,13 @@ function _mother_create_api() {
 
 	$results = _node_query($condition);
 
-	if($results)
-		_print_status('012'); //you have already created a mother type
-
-	_create_mother_type($data->mother_nid, $data->jewel_nid);
+	if($results) {
+		$user_mother_nid = array_shift($results);
+		_update_mother_type($user_mother_nid, $data);
+		//_print_status('012'); //you have already created a mother type
+	} else {
+		_create_user_mother_type($data->mother_nid, $data->jewel_nid);
+	}
 
 	print json_encode(array('status' => 1)); //success
 
@@ -164,7 +246,8 @@ function _mother_create_api() {
 /**
  *
  * Crown API
- *
+ * 
+ * @param recipient
  * @return status
  *
  */
@@ -172,15 +255,13 @@ function _crown_api() {
 
 	global $user;
 
-	$fields = array('uid' => 'uid');
+	$fields = array('recipient' => 'nid');
 	$input = array('method' => 'POST', 'fields' => $fields);
 	$data = _input_validation_and_format($input);
-	$recipient = $data->uid;
-
-	$bundle = 'chowssmsd_crown_record';
+	$recipient = $data->recipient;
 
 	$condition = array(
-		'bundle' => $bundle,
+		'bundle' => 'chowssmsd_crown_record',
 		'condition' => array(
 			'field_chowssmsd_crown_recipient' => array('target_id' => $recipient), 
 			'field_chowssmsd_crown_part' => array('target_id' => $user->uid),
@@ -190,9 +271,11 @@ function _crown_api() {
 
 	if($results) 
 		_print_status('011'); //already crowned
-	else
-		$counts = _create_crown_record($recipient);	
+	
+	if(node_load($recipient)->field_chowssmsd_user[LANGUAGE_NONE][0]['target_id'] == $user->uid)
+		_print_status('010'); //can not crown by yourself
 
+	$counts = _create_crown_record($recipient);	
 
 	if(count($counts)%2 == 0) {
 		_create_winning_record($recipient);
@@ -210,8 +293,102 @@ function _crown_api() {
  * @param nid
  *
  */
-function _prize_list_api($nid) {
-//_prize_output_format($tid);
+function _prize_list_api() {
+
+	global $user;
+
+ 	if(!$user->uid)
+ 		_print_status('001'); //user not login
+
+	$condition = array(
+		'bundle' => 'chowssmsd_winning_record',
+		'condition' => array(
+			'field_chowssmsd_win_prize_winner' => array('target_id' => $user->uid), 
+			),
+		'orderby' => array('field_chowssmsd_win_prize_status', 'DESC'),
+		);
+	$results = _node_query($condition);
+
+	if($results){
+		$list = array();
+		foreach($results as $nid) {
+			$list[] = _prize_output_list_format($nid);
+		}		
+		print json_encode(array('status' => 1, 'data' => $list));
+	} else {
+		_print_status('020'); //user have not win the prize
+	}
+
+}
+
+/**
+ *
+ * input cellphone
+ * @param $cellphone
+ *
+ */
+function _cellphone_input_api() {
+
+	$fields = array('cellphone' => 'notnull');
+	$input = array('method' => 'POST', 'fields' => $fields);
+	$data = _input_validation_and_format($input);
+
+	$user = user_load($data->uid);
+	$user->field_user_cellphone[LANGUAGE_NONE][0]['value'] = $data->cellphone;
+	user_save($user);
+	print json_encode(array('status' => 1));
+}
+
+/**
+ *
+ * Pize exchange api
+ * @param $nid, $access
+ *
+ */
+function _pize_exchange_api() {
+
+	$fields = array('nid' => 'notnull', 'access' => 'notnull');
+	$input = array('method' => 'POST', 'fields' => $fields);
+	$data = _input_validation_and_format($input);
+
+	if($data->access == variable_get('cssmsd_api_prize_access_code', NULL)) {
+		$node = node_load($data->nid);
+		$node->field_chowssmsd_win_prize_status[LANGUAGE_NONE][0]['value'] = 1;
+		node_save($node);
+		print json_encode(array('status' => 1));
+	}
+
+	print json_encode(array('status' => '020')); //access code is wrong
+}
+
+/**
+ *
+ * Show mother page data format
+ * 
+ * @param $user_mother_id
+ *
+ */
+function _mother_show_format($user_mother_id){
+
+	$user_mother = node_load($user_mother_id);
+	$mother_type = node_load($user_mother->field_chowssmsd_users_monther[LANGUAGE_NONE][0]['target_id']);
+	$jewel = node_load($user_mother->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id']);
+
+	$mother = new stdClass(); 
+	$mother_info = new stdClass();
+	$mother_jewel = new stdClass();
+
+	$mother_info->name = $mother_type->title;
+	$mother_info->description = $mother_type->body[LANGUAGE_NONE][0]['value'];
+	$mother_info->pic_thumbnail = image_style_url('cssmsd_mother_pic_s', $mother_type->field_chowssmsd_monther_pic[LANGUAGE_NONE][0]['uri']);
+
+	$mother_jewel->name = $mother_jewel->title;
+	$mother_jewel->pic_thumbnail = image_style_url('cssmsd_jewel_pic_thumb', $jewel->field_chowssmsd_jewel_pic[LANGUAGE_NONE][0]['uri']);
+
+	$mother->mother_info = $mother_info;
+	$mother->mother_jewel = $mother_jewel;
+
+	return $mother;
 }
 
 /**
@@ -289,11 +466,11 @@ function _push_wechat_message($recipient) {
 
 /**
  *
- * Create mother type
+ * Create user mother type
  *
  * @param $mother_nid, $jewel_nid
  */
-function _create_mother_type($mother_nid, $jewel_nid) {
+function _create_user_mother_type($mother_nid, $jewel_nid) {
 
 	global $user;
 
@@ -303,11 +480,50 @@ function _create_mother_type($mother_nid, $jewel_nid) {
 	node_object_prepare($node);
 	$node->language = LANGUAGE_NONE;
 	$node->status = 0;
-	$node->title = $mother_nid;
+	$node->title = node_load($mother_nid)->title;
 	$node->field_chowssmsd_users_monther[LANGUAGE_NONE][0]['target_id'] = $mother_nid;
 	$node->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id'] = $jewel_nid;
 	$node->field_chowssmsd_user[LANGUAGE_NONE][0]['target_id'] = $user->uid;
 	node_save($node);
+
+}
+
+/**
+ *
+ * Update mother type
+ *
+ * @param $mother_nid
+ */
+function _update_mother_type($user_mother_nid, $data) {
+
+	$node = node_load($user_mother_nid);
+	$node->field_chowssmsd_users_monther[LANGUAGE_NONE][0]['target_id'] = $data->mother_nid;
+	$node->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id'] = $data->jewel_nid;
+	node_save($node);
+
+}
+
+/**
+ *
+ * Check is Create mother type
+ *
+ * @param $uid
+ * @return bool
+ */
+function _is_create_mother($uid) {
+
+	$bundle = 'chowssmsd_users_mother';
+
+	$condition = array(
+		'bundle' => $bundle,
+		'condition' => array(
+			'field_chowssmsd_user' => array('target_id' => $uid), 
+			),
+		);
+	$results = _node_query($condition);
+	if($results)
+		return TRUE;
+	return FALSE;
 
 }
 
@@ -321,9 +537,6 @@ function _create_mother_type($mother_nid, $jewel_nid) {
 function _create_crown_record($recipient) {
 
 	global $user;
-
-	if($recipient == $user->uid)
-		_print_status('010'); //can not crown by yourself
 
 	$node = new stdClass();
 	$bundle = 'chowssmsd_crown_record';
@@ -359,22 +572,54 @@ function _create_winning_record($recipient) {
 
 	$user = user_load($recipient);
 
+	if($user->field_user_nearnest_store)
+		$store_nid = $user->field_user_nearnest_store[LANGUAGE_NONE][0]['target_id'];
+	else
+		$store_nid = '';
+	$prize_tid = _get_prize_by_store_nid($store_nid);
+
 	$node = new stdClass();
 	$bundle = 'chowssmsd_winning_record';
 	$node->type = $bundle;
 	node_object_prepare($node);
 	$node->language = LANGUAGE_NONE;
 	$node->status = 0;
+	$node->uid = $user->uid;
 	$node->title = t('winning');
-	$node->field_chowssmsd_prize_winner[LANGUAGE_NONE][0]['target_id'] = $user->uid;
+	$node->field_chowssmsd_win_prize_winner[LANGUAGE_NONE][0]['target_id'] = $user->uid;
+	$node->field_chowssmsd_win_prize_name[LANGUAGE_NONE][0]['tid'] = $prize_tid;
+	$node->field_chowssmsd_win_prize_code[LANGUAGE_NONE][0]['value'] = _get_prize_code($prize_tid);
 
-	$store_nid = $user->field_user_nearnest_store[LANGUAGE_NONE][0]['target_id'];
-	$prize_tid = _get_prize_by_store_nid($store_nid);
-	$node->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'] = $prize_tid;
-	$node->field_chowssmsd_prize_code[LANGUAGE_NONE][0]['value'] = _get_prize_code($prize_tid);
-	$node->field_chowssmsd_store_name[LANGUAGE_NONE][0]['target_id'] = $store_nid;
+	if(_is_instore_prize($prize_tid))
+		$node->field_chowssmsd_win_store_name[LANGUAGE_NONE][0]['target_id'] = $store_nid;
 	
 	node_save($node);
+
+}
+
+
+
+
+/**
+ *
+ * Check is instore prize  
+ *
+ * @param tid
+ *
+ */
+function _is_instore_prize($tid) {
+
+ 	$term = taxonomy_get_term_by_name('InStore');
+	$tid = array_shift($virtual_term)->tid;
+
+	$virtual_prizes = taxonomy_get_children($virtual_tid);
+	
+	foreach($virtual_prizes as $prize) {
+		if($prize->tid == $tid)
+			return TRUE;
+	}
+
+	return FALSE;
 
 }
 
@@ -413,22 +658,72 @@ function _get_prize_code($tid) {
  *
  * Prize output format
  *
- * @param tid
+ * @param nid
  *
  */
-function _prize_output_format($tid) {
+function _prize_output_list_format($nid) {
 
-	$term = taxonomy_term_load($prize_tid);
-	$type = taxonomy_term_load($term->field_chowssmsd_prize_type[LANGUAGE_NONE][0]['tid'])->name;
+	$list = new stdClass();
+	$node = node_load($nid);
+	$prize_tid = $node->field_chowssmsd_win_prize_name[LANGUAGE_NONE][0]['tid'];
+	$prize_code = $node->field_chowssmsd_win_prize_code[LANGUAGE_NONE][0]['value'];
 
-	// if($term->name == '门店200元优惠券')
-	// 	return substr(uuid_generate(), 0, 8);
+	$list->prize_nid = $nid;
+	$list->name = taxonomy_term_load($prize_tid)->name;
+	$list->exchanged = $node->field_chowssmsd_win_prize_status[LANGUAGE_NONE][0]['value'];
+	$list->data = _prize_data_format($prize_tid, $prize_code, $list->exchanged);
 
-	// if($type == 'Coupon'){
-		
-	// }
+	return $list;
 
-	// return $term->name;
+}
+
+/**
+ *
+ * Prize data format
+ *
+ * @param tid, $prize_code, $status
+ *
+ */
+function _prize_data_format($tid, $prize_code, $status) {
+
+	global $user;
+
+	$prize = new stdClass();
+	$term = taxonomy_term_load($tid);
+	$info = array();
+	$rule = array();
+
+ 	$coupon_term = taxonomy_get_term_by_name('Coupon');
+	$coupon_tid = array_shift($virtual_term)->tid;
+	if($term->field_chowssmsd_prize_type[LANGUAGE_NONE][0]['target_id'] == $coupon_tid){
+		$info[] = array('field' => '代码', 'value' => $prize_code);
+		$data->exchange = $status ? 1 : 0;
+	}
+
+	if($term->field_chowssmsd_use_scope)
+		$info[] = array('field' => '使用范围', 'value' => $term->field_chowssmsd_use_scope[LANGUAGE_NONE][0]['value']);
+
+	if($term->field_chowssmsd_use_date){
+		$start = date('Y.m.d', strtotime($term->field_chowssmsd_use_date[LANGUAGE_NONE][0]['value']));
+		$end = date('Y.m.d', strtotime($term->field_chowssmsd_use_date[LANGUAGE_NONE][0]['value2']));
+		$info[] = array('field' => '使用有效期', 'value' => $start . '-' . $end);
+	}
+
+	if($user->field_user_cellphone)
+		$info[] = array('field' => '您的手机', 'value' => $user->field_user_cellphone[LANGUAGE_NONE][0]['value']);
+
+	if($term->field_chowssmsd_exchange_date){
+		$start = date('Y.m.d', strtotime($term->field_chowssmsd_exchange_date[LANGUAGE_NONE][0]['value']));
+		$end = date('Y.m.d', strtotime($term->field_chowssmsd_exchange_date[LANGUAGE_NONE][0]['value2']));
+		$rule[] = array('field' => '兑换有效期', 'value' => $start . '-' . $end);
+	}
+
+
+	$data = new stdClass();
+	$data->info = $info;
+	$data->rule = $rule;
+
+	return $data;
 
 }
 
@@ -514,6 +809,7 @@ function _node_query($condition) {
  		_print_status('003'); //wrong request method
 
  	$data = new stdClass();
+ 	$data->uid = $user->uid;
 
  	if($input['method'] == 'POST') {
 	 	foreach($input['fields'] as $field => $type) {
@@ -531,6 +827,9 @@ function _node_query($condition) {
 
 	        if($type == 'file' && !file_load($value))
 	          return _print_status('999'); //unknow error
+
+	        if($type == 'nid' && !node_load($value))
+	          return _print_status('013'); //nid does not exit
 
 	        if($type == 'mother'){
 	        	$result = db_query('SELECT 1 FROM {node} WHERE nid = :nid AND type = :type', array(':nid' => $value, 'type' => 'chowssmsd_monther_type'))->fetchField();
@@ -581,19 +880,23 @@ function _node_query($condition) {
   * @return term
   *
   */
- function _get_prize_by_store_nid($nid) {
- 	//get the entity prize tid
- 	$item_ids = node_load($nid)->field_chowssmsd_store_prize[LANGUAGE_NONE];
+ function _get_prize_by_store_nid($nid = '') {
+
  	$prizes = array();
- 	
- 	foreach($item_ids as $item_id) {
- 		$item = field_collection_item_load($item_id['value']);
- 		$tid = $item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'];
- 		$quantity = $item->field_chowssmsd_prize_quantity[LANGUAGE_NONE][0]['value'];
- 		$used = _get_prize_used_quantity($nid, $tid);
- 		if($used < $quantity) {
- 			$prizes[] = $tid;
- 		}
+
+ 	if($nid){
+	 	//get the entity prize tid
+	 	$item_ids = node_load($nid)->field_chowssmsd_store_prize[LANGUAGE_NONE];
+
+	 	foreach($item_ids as $item_id) {
+	 		$item = field_collection_item_load($item_id['value']);
+	 		$tid = $item->field_chowssmsd_prize_name[LANGUAGE_NONE][0]['tid'];
+	 		$quantity = $item->field_chowssmsd_prize_quantity[LANGUAGE_NONE][0]['value'];
+	 		$used = _get_prize_used_quantity($nid, $tid);
+	 		if($used < $quantity) {
+	 			$prizes[] = $tid;
+	 		}
+	 	}
  	}
 
  	//get the coupon prize tid
@@ -625,23 +928,6 @@ function _node_query($condition) {
 
  /**
   *
-  * Check prize by LBS
-  *
-  * @param latitude, $longitude
-  * @return code
-  *
-  */
- function _show_prize_by_lbs() {
- 	$latitude = $_POST['data']['latitude'];
- 	$longitude = $_POST['data']['longitude'];
-	$node = _get_nearest_store($latitude, $longitude);
-
-	
-
- }
-
- /**
-  *
   * Get prize number which has been used
   *
   * @param $store_nid, $tid
@@ -652,8 +938,8 @@ function _node_query($condition) {
  	$condition = array(
 		'bundle' => 'chowssmsd_winning_record',
 		'condition' => array(
-			'field_chowssmsd_store_name' => array('target_id' => $store_nid), 
-			'field_chowssmsd_prize_name' => array('tid' => $tid), 
+			'field_chowssmsd_win_store_name' => array('target_id' => $store_nid), 
+			'field_chowssmsd_win_prize_name' => array('tid' => $tid), 
 			),
 		);
 	$results = _node_query($condition);
@@ -688,7 +974,7 @@ function _node_query($condition) {
 		$latitude_end = $node->field_chowssmsd_store_latitude[LANGUAGE_NONE][0]['value'];
 		$longitude_end = $node->field_chowssmsd_store_longitude[LANGUAGE_NONE][0]['value'];
 		$store[$node->nid] = _get_distance_between_points($latitude, $longitude, $latitude_end, $longitude_end);
-	}
+	};
 	asort($store);
  	$nids = array_keys($store);
  	$nid = reset($nids);
@@ -710,8 +996,42 @@ function _get_distance_between_points($latitude1, $longitude1, $latitude2, $long
     $miles = acos($miles);
     $miles = rad2deg($miles);
     $miles = $miles * 60 * 1.1515;
+    $feet = $miles * 5280;
+    $yards = $feet / 3;
+    $kilometers = $miles * 1.609344;
     $meters = $kilometers * 1000;
-    return $meters;
+    $dis = compact('miles','feet','yards','kilometers','meters');
+    return $dis['meters'];
+}
+
+/**
+ *
+ * User Login
+ * @param $openid
+ *
+ */
+function _user_login($openid) {
+
+	global $user;
+
+	if(!$user->uid) {
+		$tracking_key = _tracking_key_generate();
+		$uid = db_query('SELECT uid FROM {users} WHERE name = :username', array(':username' => $tracking_key))->fetchField();
+		if($uid) {
+			$user = user_load($uid);
+		} else {
+			// organize user data
+			$edit = array();
+			$edit['name'] = $tracking_key;
+			$edit['mail'] = $edit['init'] = $tracking_key . '@fake.com';
+			$edit['status'] = 1;
+			$edit['field_user_weixin_openid'][LANGUAGE_NONE][0]['value'] = $openid;
+			$edit['access'] = REQUEST_TIME;
+			$user = user_save(NULL, $edit);
+		}
+		user_login_finalize();  
+
+	}
 }
 
  /**

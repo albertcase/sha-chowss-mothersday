@@ -68,9 +68,11 @@ function cssmsd_feature_crown_record_field_default_field_bases() {
         'sort' => array(
           'type' => 'none',
         ),
-        'target_bundles' => array(),
+        'target_bundles' => array(
+          'chowssmsd_users_mother' => 'chowssmsd_users_mother',
+        ),
       ),
-      'target_type' => 'user',
+      'target_type' => 'node',
     ),
     'translatable' => 0,
     'type' => 'entityreference',
