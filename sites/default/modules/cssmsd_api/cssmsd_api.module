@@ -78,7 +78,7 @@ function cssmsd_api_menu() {
  * test
  */
  function _test() {
-
+_get_nearest_store('31.2013176089', '121.4341129009');exit;
  }
 
 /**
@@ -94,8 +94,10 @@ function _lbs_update_api() {
 	$data = _input_validation_and_format($input);
 
 	$user = user_load($data->uid);
-	$latitude = $user->field_user_latitude[LANGUAGE_NONE][0]['value'];
-	$longitude = $user->field_user_longitude[LANGUAGE_NONE][0]['value'];
+	if(isset($user->field_user_latitude) && isset($user->field_user_longitude)) {
+		$latitude = $user->field_user_latitude[LANGUAGE_NONE][0]['value'];
+		$longitude = $user->field_user_longitude[LANGUAGE_NONE][0]['value'];		
+	}
 
 	if(!$latitude || !$longitude){
 		$user->field_user_latitude[LANGUAGE_NONE][0]['value'] = $data->latitude;
@@ -827,7 +829,7 @@ function _node_query($condition) {
 		$latitude_end = $node->field_chowssmsd_store_latitude[LANGUAGE_NONE][0]['value'];
 		$longitude_end = $node->field_chowssmsd_store_longitude[LANGUAGE_NONE][0]['value'];
 		$store[$node->nid] = _get_distance_between_points($latitude, $longitude, $latitude_end, $longitude_end);
-	}
+	};
 	asort($store);
  	$nids = array_keys($store);
  	$nid = reset($nids);
@@ -849,8 +851,12 @@ function _get_distance_between_points($latitude1, $longitude1, $latitude2, $long
     $miles = acos($miles);
     $miles = rad2deg($miles);
     $miles = $miles * 60 * 1.1515;
+    $feet = $miles * 5280;
+    $yards = $feet / 3;
+    $kilometers = $miles * 1.609344;
     $meters = $kilometers * 1000;
-    return $meters;
+    $dis = compact('miles','feet','yards','kilometers','meters');
+    return $dis['meters'];
 }
 
 /**
