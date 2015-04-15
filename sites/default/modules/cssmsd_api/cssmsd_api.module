@@ -55,6 +55,13 @@ function cssmsd_api_menu() {
     'access callback' => TRUE,
   );
 
+  $items['api/mother_show'] = array(
+    'title' => t('Ajax API Prize List'),
+    'page callback' => '_mother_show_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
   $items['admin/config/cssmsd/prize'] = array(
     'title' => 'CSSMSD Lucky Set',
     'description' => 'Configure required settings for Lucky',
@@ -81,6 +88,102 @@ function cssmsd_api_menu() {
 
 _get_nearest_store('31.2013176089', '121.4341129009');exit;
  }
+
+
+/**
+ *
+ * Show user`s mother API
+ * 
+ * @param $uid/null
+ *
+ */
+function _mother_show_api() {
+
+	global $user;
+
+ 	if(!$user->uid)
+ 		_print_status('001'); //user not login
+
+ 	$uid = isset($_POST['uid']) ? $_POST['uid'] : $user->uid;
+
+	$bundle = 'chowssmsd_users_mother';
+
+	$condition = array(
+		'bundle' => $bundle,
+		'condition' => array(
+			'field_chowssmsd_user' => array('target_id' => $uid), 
+			),
+		);
+
+	$results = _node_query($condition);
+
+	if(!$results) 
+		_print_status('021'); //user have not created mother yet
+
+	$user_mother_nid = array_shift($results);
+
+	$user_mother_data = _mother_show_format($user_mother_id);
+
+	$condition = array(
+		'bundle' => 'chowssmsd_crown_record',
+		'condition' => array(
+			'field_chowssmsd_crown_recipient' => array('target_id' => $uid), 
+			),
+		);
+	$results = _node_query($condition);
+	$crown_count = count($results);
+
+	if(isset($_POST['uid'])){
+		$condition = array(
+			'bundle' => 'chowssmsd_winning_record',
+			'condition' => array(
+				'field_chowssmsd_win_prize_winner' => array('target_id' => $uid), 
+				),
+			);
+		$results = _node_query($condition);	
+		$prize_count = count($results);
+		$user_mother_footer = array('type' => 'other', 'crown_count' => $crown_count, 'prize_count' => $prize_count);
+	} else {
+		$user_mother_footer = array('type' => 'me', 'crown_count' => $crown_count);
+	}
+
+	$user_mother = new stdClass();
+	$user_mother->user_mother_data = $user_mother_data;
+	$user_mother->user_mother_footer = $user_mother_footer;
+
+	print json_encode(array('status' => 1, 'data' => $user_mother)); //success
+
+}
+
+/**
+ *
+ * Show mother page data format
+ * 
+ * @param $user_mother_id
+ *
+ */
+function _mother_show_format($user_mother_id){
+
+	$user_mother = node_load($user_mother_id);
+	$mother_type = node_load($user_mother->field_chowssmsd_users_monther[LANGUAGE_NONE][0]['target_id']);
+	$jewel = node_load($user_mother->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id']);
+
+	$mother = new stdClass(); 
+	$mother_info = new stdClass();
+	$mother_jewel = new stdClass();
+
+	$mother_info->name = $mother_type->title;
+	$mother_info->description = $mother_type->body[LANGUAGE_NONE][0]['value'];
+	$mother_info->pic_thumbnail = image_style_url('cssmsd_mother_pic_s', $mother_type->field_chowssmsd_monther_pic[LANGUAGE_NONE][0]['uri']);
+
+	$mother_jewel->name = $mother_jewel->title;
+	$mother_jewel->pic_thumbnail = image_style_url('cssmsd_jewel_pic_thumb', $jewel->field_chowssmsd_jewel_pic[LANGUAGE_NONE][0]['uri']);
+
+	$mother->mother_info = $mother_info;
+	$mother->mother_jewel = $mother_jewel;
+
+	return $mother;
+}
 
 /**
  *
@@ -182,15 +285,13 @@ function _crown_api() {
 
 	global $user;
 
-	$fields = array('recipient' => 'uid');
+	$fields = array('recipient' => 'nid');
 	$input = array('method' => 'POST', 'fields' => $fields);
 	$data = _input_validation_and_format($input);
-	$recipient = $data->uid;
-
-	$bundle = 'chowssmsd_crown_record';
+	$recipient = $data->user_mother_nid;
 
 	$condition = array(
-		'bundle' => $bundle,
+		'bundle' => 'chowssmsd_crown_record',
 		'condition' => array(
 			'field_chowssmsd_crown_recipient' => array('target_id' => $recipient), 
 			'field_chowssmsd_crown_part' => array('target_id' => $user->uid),
@@ -200,9 +301,11 @@ function _crown_api() {
 
 	if($results) 
 		_print_status('011'); //already crowned
-	else
-		$counts = _create_crown_record($recipient);	
+	
+	if(node_load($recipient)->field_chowssmsd_user[LANGUAGE_NONE][0]['target_id'] == $user->uid)
+		_print_status('010'); //can not crown by yourself
 
+	$counts = _create_crown_record($recipient);	
 
 	if(count($counts)%2 == 0) {
 		_create_winning_record($recipient);
@@ -434,9 +537,6 @@ function _is_create_mother($uid) {
 function _create_crown_record($recipient) {
 
 	global $user;
-
-	if($recipient == $user->uid)
-		_print_status('010'); //can not crown by yourself
 
 	$node = new stdClass();
 	$bundle = 'chowssmsd_crown_record';
