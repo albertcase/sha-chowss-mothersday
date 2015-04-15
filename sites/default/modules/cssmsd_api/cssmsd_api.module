@@ -235,9 +235,9 @@ function _mother_create_api() {
 		$user_mother_nid = array_shift($results);
 		_update_mother_type($user_mother_nid, $data);
 		//_print_status('012'); //you have already created a mother type
+	} else {
+		_create_user_mother_type($data->mother_nid, $data->jewel_nid);
 	}
-	
-	_create_mother_type($data->mother_nid, $data->jewel_nid);
 
 	print json_encode(array('status' => 1)); //success
 
@@ -258,7 +258,7 @@ function _crown_api() {
 	$fields = array('recipient' => 'nid');
 	$input = array('method' => 'POST', 'fields' => $fields);
 	$data = _input_validation_and_format($input);
-	$recipient = $data->user_mother_nid;
+	$recipient = $data->recipient;
 
 	$condition = array(
 		'bundle' => 'chowssmsd_crown_record',
@@ -466,11 +466,11 @@ function _push_wechat_message($recipient) {
 
 /**
  *
- * Create mother type
+ * Create user mother type
  *
  * @param $mother_nid, $jewel_nid
  */
-function _create_mother_type($mother_nid, $jewel_nid) {
+function _create_user_mother_type($mother_nid, $jewel_nid) {
 
 	global $user;
 
@@ -480,7 +480,7 @@ function _create_mother_type($mother_nid, $jewel_nid) {
 	node_object_prepare($node);
 	$node->language = LANGUAGE_NONE;
 	$node->status = 0;
-	$node->title = $mother_nid;
+	$node->title = node_load($mother_nid)->title;
 	$node->field_chowssmsd_users_monther[LANGUAGE_NONE][0]['target_id'] = $mother_nid;
 	$node->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id'] = $jewel_nid;
 	$node->field_chowssmsd_user[LANGUAGE_NONE][0]['target_id'] = $user->uid;
@@ -496,9 +496,9 @@ function _create_mother_type($mother_nid, $jewel_nid) {
  */
 function _update_mother_type($user_mother_nid, $data) {
 
-	$node = node_load($mother_nid);
+	$node = node_load($user_mother_nid);
 	$node->field_chowssmsd_users_monther[LANGUAGE_NONE][0]['target_id'] = $data->mother_nid;
-	$node->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id'] = $$data->jewel_nid;
+	$node->field_chowssmsd_users_monther_j[LANGUAGE_NONE][0]['target_id'] = $data->jewel_nid;
 	node_save($node);
 
 }
@@ -827,6 +827,9 @@ function _node_query($condition) {
 
 	        if($type == 'file' && !file_load($value))
 	          return _print_status('999'); //unknow error
+
+	        if($type == 'nid' && !node_load($value))
+	          return _print_status('013'); //nid does not exit
 
 	        if($type == 'mother'){
 	        	$result = db_query('SELECT 1 FROM {node} WHERE nid = :nid AND type = :type', array(':nid' => $value, 'type' => 'chowssmsd_monther_type'))->fetchField();
